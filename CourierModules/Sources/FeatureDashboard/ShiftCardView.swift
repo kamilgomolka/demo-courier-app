@@ -19,7 +19,7 @@ struct ShiftCardView: View {
                 HStack {
                     Text(.dashboardShiftCardEarnings)
                     Spacer()
-                    Text(summary.earnings, format: .currency(code: "PLN"))
+                    Text(summary.earnings, format: .currency(code: "GBP"))
                 }
                 .font(Typography.headline)
                 .foregroundStyle(Palette.textPrimary)

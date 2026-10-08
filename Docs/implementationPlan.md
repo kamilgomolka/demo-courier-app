@@ -151,7 +151,7 @@ CI (`ci.yml`): jawnie ustawiony `DEVELOPER_DIR` na Xcode 26.6 (ścieżka zgodna 
 
 ### 4.4 Model danych (Domain, czyste typy `Sendable`)
 
-- `DeliveryTask`: `id`, `recipientName`, `deliveryAddress`, `packageSummary`, `payout: Decimal` (PLN), `status`, `exceptionReason?`, `sortOrder`, `shiftID?`, `syncState` (**wyliczany**), `assignedAt`, `completedAt?`.
+- `DeliveryTask`: `id`, `recipientName`, `deliveryAddress`, `packageSummary`, `payout: Decimal` (GBP), `status`, `exceptionReason?`, `sortOrder`, `shiftID?`, `syncState` (**wyliczany**), `assignedAt`, `completedAt?`.
 - `TaskStatus`: `new`, `inTransit`, `delivered`, `exception`.
 - `ExceptionReason`: `customerNoShow`, `addressNotFound`, `packageDamaged`, `other(details: String)`.
 - `SyncState`: `pending`, `synced`. Przy mapowaniu rekordu do snapshotu `pending` oznacza, że istnieje oczekujący job `updateStatus` dla zadania (job `reorder` się nie liczy). Nie jest zapisywany osobno, więc nie może się rozjechać z outboxem.
@@ -266,6 +266,7 @@ Pasek odliczania: `ProgressView(timerInterval:countsDown:)` z `completedAt ... c
 - Klucze: `<ekran>.<element>.<rola>`, camelCase w segmentach (np. `dashboard.shiftCard.startButton`).
 - Dostęp przez wygenerowane symbole (jak w szablonie: `String(localized: .klucz)`). Zero literałów w kodzie.
 - Treści wspólne dla kilku feature'ów (np. nazwy powodów wyjątku w `FeatureDelivery` i `FeatureHistory`) są duplikowane w ich katalogach. Świadomy koszt niezależności modułów.
+- Kontekst anglojęzyczny (UK): aplikacja działa w języku angielskim (`en-GB`), a dane mockowe (`courier-snapshot.json`) zawierają angielskie imiona i nazwiska, adresy w Londynie (z kodami pocztowymi UK) oraz kwoty w GBP (`.currency(code: "GBP")`). Położenie kuriera jest symulowane w UK (Londyn, Marylebone/Fitzrovia), bez użycia rzeczywistej lokalizacji urządzenia. Daty i liczby formatowane z `Locale(identifier: "en_GB")`.
 
 ### 4.11 Strategia testów
 

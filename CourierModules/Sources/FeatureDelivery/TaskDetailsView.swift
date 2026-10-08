@@ -68,7 +68,7 @@ public struct TaskDetailsView: View {
             Text(task.packageSummary)
                 .font(Typography.body)
                 .foregroundStyle(Palette.textSecondary)
-            Text(task.payout, format: .currency(code: "PLN"))
+            Text(task.payout, format: .currency(code: "GBP"))
                 .font(Typography.headline)
                 .foregroundStyle(Palette.textPrimary)
         }

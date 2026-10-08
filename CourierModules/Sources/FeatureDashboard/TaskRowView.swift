@@ -12,7 +12,7 @@ struct TaskRowView: View {
                     .font(Typography.headline)
                     .foregroundStyle(Palette.textPrimary)
                 Spacer()
-                Text(task.payout, format: .currency(code: "PLN"))
+                Text(task.payout, format: .currency(code: "GBP"))
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary)
             }
