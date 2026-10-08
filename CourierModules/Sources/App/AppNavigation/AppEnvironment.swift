@@ -20,7 +20,11 @@ final class AppEnvironment {
     }
 
     static func makeLive(arguments: [String] = ProcessInfo.processInfo.arguments) -> AppEnvironment? {
-        let isUITesting = arguments.contains(uiTestingArgument)
+        #if DEBUG
+            let isUITesting = arguments.contains(uiTestingArgument)
+        #else
+            let isUITesting = false
+        #endif
         do {
             let container = try CourierStorage.makeContainer(isStoredInMemoryOnly: isUITesting)
             let store = LocalStore(modelContainer: container)

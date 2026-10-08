@@ -44,8 +44,13 @@ jobs:
   lint:
     name: Lint
     runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@v7
+
+      - name: Verify toolchain
+        run: xcrun swift-format --version | tee /dev/stderr | grep -q "^6.3"
 
       - name: Check formatting
         run: make lint

@@ -31,17 +31,14 @@ final class HistoryModel {
     }
 
     private func groupedByDay(_ tasks: [DeliveryTask]) -> [HistorySection] {
-        let completedTasks = tasks.filter { $0.completedAt != nil }
-        let tasksByDay = Dictionary(grouping: completedTasks) { task in
-            calendar.startOfDay(for: task.completedAt ?? task.assignedAt)
+        let completedTasks = tasks.compactMap { task in
+            task.completedAt.map { (task: task, completedAt: $0) }
         }
+        let tasksByDay = Dictionary(grouping: completedTasks) { calendar.startOfDay(for: $0.completedAt) }
         return
             tasksByDay
-            .map { day, tasks in
-                HistorySection(
-                    day: day,
-                    tasks: tasks.sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
-                )
+            .map { day, entries in
+                HistorySection(day: day, tasks: entries.sorted { $0.completedAt > $1.completedAt }.map(\.task))
             }
             .sorted { $0.day > $1.day }
     }

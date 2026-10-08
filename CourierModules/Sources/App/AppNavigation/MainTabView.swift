@@ -31,12 +31,12 @@ struct MainTabView: View {
                 }
             }
             Tab(.navigationTabHistory, systemImage: "clock", value: AppTab.history) {
-                NavigationStack(path: $router.historyPath) {
+                NavigationStack {
                     HistoryView(taskRepository: environment.store)
                 }
             }
             Tab(.navigationTabSettings, systemImage: "gearshape", value: AppTab.settings) {
-                NavigationStack(path: $router.settingsPath) {
+                NavigationStack {
                     SettingsView(
                         conditionsStore: environment.networkConditionsStore,
                         jobRepository: environment.store,

@@ -1,6 +1,5 @@
 import Domain
 import Observation
-import SwiftUI
 
 enum AppTab: Hashable {
     case dashboard
@@ -16,8 +15,6 @@ enum DashboardRoute: Hashable {
 final class AppRouter {
     var selectedTab: AppTab = .dashboard
     var dashboardPath: [DashboardRoute] = []
-    var historyPath = NavigationPath()
-    var settingsPath = NavigationPath()
 
     func showTaskDetails(id: TaskID) {
         dashboardPath.append(.taskDetails(id))
