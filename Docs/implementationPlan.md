@@ -55,53 +55,64 @@ Wszystkie odwracalne. Do korekty na review.
 
 ```mermaid
 flowchart TD
-    CourierAppHost[CourierApp host] --> AppNavigation
-    AppNavigation --> FeatureDashboard
-    AppNavigation --> FeatureDelivery
-    AppNavigation --> FeatureHistory
-    AppNavigation --> FeatureSettings
-    AppNavigation --> SyncEngine
-    AppNavigation --> LocalStorage
-    FeatureDashboard --> Domain
-    FeatureDashboard --> DesignSystem
-    FeatureDelivery --> Domain
-    FeatureDelivery --> DesignSystem
-    FeatureHistory --> Domain
-    FeatureHistory --> DesignSystem
-    FeatureSettings --> Domain
-    FeatureSettings --> DesignSystem
-    SyncEngine --> Domain
-    LocalStorage --> Domain
+    subgraph XcodeProject["Xcode Project"]
+        CourierAppHost["CourierApp (host i UI testy)"]
+    end
+
+    subgraph CourierModules["CourierModules (lokalny pakiet SPM)"]
+        AppNavigation --> FeatureDashboard & FeatureDelivery & FeatureHistory & FeatureSettings
+        AppNavigation --> SyncEngine & LocalStorage
+
+        FeatureDashboard & FeatureDelivery & FeatureHistory & FeatureSettings --> Domain & DesignSystem
+        SyncEngine --> Domain
+        LocalStorage --> Domain
+
+        DomainTestSupport --> Domain
+        DomainTestSupport -.->|zależność testowa| FeatureDashboardTests & FeatureDeliveryTests & FeatureHistoryTests & FeatureSettingsTests & SyncEngineTests & LocalStorageTests
+    end
+
+    CourierAppHost --> AppNavigation
 ```
 
-`AppNavigation` zależy też bezpośrednio od `Domain` i `DesignSystem`. Dla czytelności pominięte na diagramie.
+`AppNavigation` (pakiet) jest Composition Root: jako jedyny widzi `LocalStorage` i `SyncEngine` i wstrzykuje je do feature'ów przez inicjalizatory. Host tworzy tylko kontener SwiftData i przekazuje go do `AppNavigation`. Moduły `Feature*` zależą wyłącznie od `Domain` i `DesignSystem`. `AppNavigation` zależy też bezpośrednio od `Domain` i `DesignSystem` (pominięte na diagramie). `SyncEngineTests` zależą dodatkowo od `LocalStorage` (testy integracyjne). `DomainTestSupport` jest produktem używanym wyłącznie przez targety testowe.
 
 ### 4.2 Struktura katalogów
 
 ```
-demo-courier/
+demo-courier-v2/
 ├── CourierApp.xcodeproj
-├── CourierApp.xctestplan                 # + testy wszystkich pakietów
-├── CourierApp/Source/Application/App.swift
-├── CourierAppTests/  CourierAppUITests/
+├── CourierApp.xctestplan                 # UI testy + testy targetów SPM
+├── CourierApp/                           # host aplikacji
+│   ├── Source/Application/App.swift      # @main, tworzy kontener SwiftData i wpina AppNavigation
+│   └── SupportingFiles/                  # Info.plist, xcassets (AppIcon)
+├── CourierAppUITests/                    # UI testy E2E (XCTest)
 ├── Config/                               # xcconfig (strictness, platform)
-├── Packages/
-│   ├── Core/
+├── CourierModules/                       # jeden lokalny pakiet SPM
+│   ├── Package.swift                     # wszystkie targety i wspólne strictSettings
+│   ├── Sources/
+│   │   ├── AppNavigation/
 │   │   ├── Domain/
+│   │   ├── DomainTestSupport/            # mocki, fake'i, fixtury (tylko dla testów)
 │   │   ├── DesignSystem/
-│   │   ├── LocalStorage/
-│   │   └── SyncEngine/
-│   ├── Features/
 │   │   ├── FeatureDashboard/
 │   │   ├── FeatureDelivery/
 │   │   ├── FeatureHistory/
-│   │   └── FeatureSettings/
-│   └── App/
-│       └── AppNavigation/
-└── docs/PLAN.md
+│   │   ├── FeatureSettings/
+│   │   ├── LocalStorage/
+│   │   └── SyncEngine/
+│   └── Tests/
+│       ├── DomainTests/
+│       ├── DesignSystemTests/
+│       ├── FeatureDashboardTests/        # Swift Testing + DomainTestSupport
+│       ├── FeatureDeliveryTests/
+│       ├── FeatureHistoryTests/
+│       ├── FeatureSettingsTests/
+│       ├── LocalStorageTests/
+│       └── SyncEngineTests/
+└── Docs/implementationPlan.md
 ```
 
-Układ pakietu: `Package.swift`, `Sources/<Moduł>/` (z `Resources/` tam, gdzie potrzebne), `Tests/<Moduł>Tests/`. Pakiety przyjmują `swift-tools-version: 6.2`, `defaultLocalization: "en"`, `platforms: [.iOS(.v26)]`.
+`Sources/<Moduł>/` z `Resources/` tam, gdzie potrzebne. Pakiet: `swift-tools-version: 6.2`, `defaultLocalization: "en"`, `platforms: [.iOS(.v26)]`. Host linkuje wyłącznie bibliotekę `AppNavigation`.
 
 Nazwy modułów bez zmian. Sprawdzone pod kątem kolizji z modułami systemowymi: brak. Reguła wewnętrzna: żaden typ nie nazywa się tak jak jego moduł.
 
@@ -115,7 +126,7 @@ Host (xcconfig, `Config/Project/ProjectBase.xcconfig`):
 - upcoming features: `ExistentialAny`, `InternalImportsByDefault`, `MemberImportVisibility`
 - `SWIFT_APPROACHABLE_CONCURRENCY = YES` zostaje. W Swift 6 mode jedyne dwie flagi, które realnie dodaje, to `NonisolatedNonsendingByDefault` i `InferIsolatedConformances`. Żadna nie osłabia kontroli data races. Pakiety włączają je jawnie.
 
-Każdy `Package.swift` (identyczny blok `swiftSettings`):
+Jeden `CourierModules/Package.swift`, wspólny blok `swiftSettings` dla każdego targetu (źródłowego i testowego):
 
 ```swift
 let strictSettings: [SwiftSetting] = [
@@ -127,9 +138,12 @@ let strictSettings: [SwiftSetting] = [
     .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
     .enableUpcomingFeature("InferIsolatedConformances"),
 ]
+
+.target(name: "Domain", swiftSettings: strictSettings)
+.target(name: "FeatureDashboard", dependencies: ["Domain", "DesignSystem"], swiftSettings: strictSettings + [.defaultIsolation(MainActor.self)])
 ```
 
-Do tego `.defaultIsolation(MainActor.self)` w modułach UI. Wszystkie te API istnieją w Xcode 26.6 (zweryfikowane w `PackageDescription.swiftinterface`). Duplikacja bloku w 9 manifestach jest świadoma, bo SwiftPM nie pozwala współdzielić kodu między manifestami.
+`.defaultIsolation(MainActor.self)` dochodzi tylko w modułach UI. Wszystkie te API istnieją w Xcode 26.6 (zweryfikowane w `PackageDescription.swiftinterface`). Jeden manifest eliminuje duplikację polityki.
 
 `.swift-format`: `NeverForceUnwrap` i `NeverUseForceTry` przełączone na `true`. Jeśli lint zaczyna krzyczeć na testy, używamy `try #require`.
 
@@ -253,33 +267,42 @@ Pasek odliczania: `ProgressView(timerInterval:countsDown:)` z `completedAt ... c
 - Dostęp przez wygenerowane symbole (jak w szablonie: `String(localized: .klucz)`). Zero literałów w kodzie.
 - Treści wspólne dla kilku feature'ów (np. nazwy powodów wyjątku w `FeatureDelivery` i `FeatureHistory`) są duplikowane w ich katalogach. Świadomy koszt niezależności modułów.
 
+### 4.11 Strategia testów
+
+- **Testy jednostkowe (pakiet):** wyłącznie Swift Testing (`@Test`, `#expect`, `try #require`). `DomainMocks` z `DomainTestSupport` są wstrzykiwane przez inicjalizatory do modeli widoków. Żaden target testowy warstwy UI nie importuje `LocalStorage`.
+- **Testy UI (host):** XCTest, aplikacja jako czarna skrzynka, weryfikacja flow przez `accessibilityIdentifier` eksponowane przez moduły UI.
+- `DomainTestSupport` jest zależnością wyłącznie targetów testowych.
+
 ## 5. Fazy
 
 Każda faza kończy się bramką: `make lint && make build && make test` zielone (warnings are errors), na Xcode 26.6, iPhone 17 Pro, iOS 26.5. Potem przerwa na review, a po akceptacji proponuję commit. `make format` uruchamiam jawnie przed bramką.
 
 Model: **hybrydowy.** Fazy 1 do 3 są poziome (kontrakty i warstwy danych są wspólne dla całej reszty, niosą największe ryzyko i testują się bez UI). Fazy 4 do 7 to pionowe plastry z działającym efektem na symulatorze. Poziome fazy dają mały, czytelny diff. Pionowe zapobiegają odkryciu błędu granicy modułów dopiero na końcu. Kontrakty z Fazy 1 są wersją roboczą aż do końca 4b.
 
-### Faza 0: szkielet architektury (puste pakiety, konfiguracja)
+### Faza 0: migracja z szablonu i szkielet SPM (struktura, kompilacja, strictness)
+
+Repozytorium startowe jest kopią szablonu mono-repo (monolityczny host). Faza 0 przenosi je do architektury z 4.1 do 4.3.
 
 - [ ] `Config/`: polityka strictness z 4.3, `TARGETED_DEVICE_FAMILY = 1`, orientacja portret, poprawka nieprawdziwego opisu "warnings-as-errors" i Run Script w README.
 - [ ] `pbxproj`: usunięty Run Script `make format`.
 - [ ] `.swift-format`: `NeverForceUnwrap` i `NeverUseForceTry` na `true`.
-- [ ] `Makefile`: `OS ?= 26.5`, `SWIFT_SOURCES` rozszerzone o `Packages`.
+- [ ] `Makefile`: `OS ?= 26.5`, `SWIFT_SOURCES` rozszerzone o `CourierModules`.
 - [ ] `ci.yml`: `DEVELOPER_DIR`, wydruk wersji Xcode i runtime'ów, `OS=latest`.
-- [ ] 9 pakietów w `Packages/{Core,Features,App}/...` z `Package.swift` (graf z 4.1, `strictSettings`, izolacja per moduł), po jednym pustym pliku źródłowym na target.
-- [ ] `AppNavigation`: placeholder `RootView` importujący wszystkie moduły (dowód, że graf się buduje).
-- [ ] Host: `XCLocalSwiftPackageReference` do `Packages/App/AppNavigation` i zależność produktu w `pbxproj`. `App.swift` pokazuje `RootView`. Usunięte `MainView`, `SampleFeatureView`, `MainViewTests`. UI test dostosowany do placeholdera. Usunięty nieużywany `Localizable.xcstrings` hosta.
-- [ ] `CourierApp.xctestplan` obsługuje kontenery pakietów (wzorzec z repo referencyjnego, `containerPath: "container:Packages/..."`).
+- [ ] **Sprzątanie monolitu:** usunięcie z projektu `MainView.swift`, `SampleFeatureView.swift`, nieużywanych katalogów w `CourierApp/Source/`, nieużywanego `Localizable.xcstrings` hosta oraz `MainViewTests.swift` (testy przechodzą do pakietu, target `CourierAppTests` znika).
+- [ ] **Inicjalizacja SPM:** `CourierModules/Package.swift` z 10 targetami źródłowymi (`Sources`, w tym `DomainTestSupport`) i odpowiadającymi targetami testowymi (`Tests`). `strictSettings` na każdym targecie, `defaultIsolation(MainActor)` w modułach UI. Po jednym pustym pliku źródłowym na target.
+- [ ] **Integracja w Xcode:** `CourierModules` jako Local Package w `CourierApp.xcodeproj` (`XCLocalSwiftPackageReference`). W *Frameworks, Libraries, and Embedded Content* hosta tylko biblioteka `AppNavigation`.
+- [ ] **AppNavigation placeholder:** pusty `RootView.swift` importujący wszystkie moduły `Feature*` (dowód, że graf się buduje). `App.swift` inicjalizuje `RootView`.
+- [ ] **Testy:** wszystkie targety testowe SPM w `CourierApp.xctestplan` (`containerPath: "container:CourierModules"`). `CourierAppUITests` sprawdza widoczność `RootView`.
 - [ ] **Spike'i (kanarki, tymczasowe, usuwane przed końcem fazy), wynik zapisany w sekcji 7:**
   1. `@Model` + `@ModelActor` w `LocalStorage` przy pełnym zestawie strictness (w tym strict memory safety i warnings-as-errors).
-  2. Wygenerowane symbole z String Catalog w pakiecie (`String(localized: .klucz)`).
-  3. Wygenerowane symbole kolorów z `Colors.xcassets` w pakiecie, w tym wariant Dark.
-  4. Uruchomienie testu z pakietu przez `CourierApp.xctestplan` i `make test`.
-- Wyjście: `make build` zielone z zalinkowanymi 9 modułami, `make lint` zielone, spike'i rozstrzygnięte.
+  2. Wygenerowane symbole z String Catalog w `FeatureDashboard` (`String(localized: .klucz)`).
+  3. Wygenerowane symbole kolorów z `Colors.xcassets` w `DesignSystem`, w tym wariant Dark.
+  4. Pusty test `import Testing` w targecie SPM uruchomiony przez `make test`.
+- Wyjście: `make build`, `make lint` i `make test` zielone, host linkuje tylko `AppNavigation`, spike'i rozstrzygnięte, architektura gotowa na kod domenowy.
 
 ### Faza 1: Domain (poziomo)
 
-- [ ] `Domain`: modele, enumy, błędy, `SyncPolicy`, `TaskStateMachine`, `ShiftSummary`, protokoły z 4.4 (wersja robocza). Target pomocniczy `DomainTestSupport` (fixtury plus fake'i repozytoriów dla testów feature'ów).
+- [ ] `Domain`: modele, enumy, błędy, `SyncPolicy`, `TaskStateMachine`, `ShiftSummary`, protokoły z 4.4 (wersja robocza). Target `DomainTestSupport` (fixtury plus fake'i repozytoriów, `DomainMocks`) z Fazy 0 dostaje zawartość.
 - [ ] Testy: tabela przejść maszyny stanów (każdy stan razy każde zdarzenie), `ShiftSummary` (earnings, progress, brak zadań), round-trip `SyncJobKind`.
 - Wyjście: kontrakty do review jako wersja robocza.
 
@@ -367,7 +390,7 @@ Model: **hybrydowy.** Fazy 1 do 3 są poziome (kontrakty i warstwy danych są ws
 - **SwiftData pod strict memory safety plus warnings-as-errors.** Makra `@Model` i `@ModelActor` mogą generować diagnostyki. Plan B: wyłączenie `strictMemorySafety` tylko w `LocalStorage` (zapisane tutaj jako wyjątek).
 - **Symbole String Catalog i assetów w pakietach.** Plan B dla stringów: typowany `enum` wewnątrz modułu opakowujący `LocalizedStringResource(…, bundle: .atURL(Bundle.module.bundleURL))`. Plan B dla kolorów: `Color("Nazwa", bundle: .module)` w jednym miejscu plus test, że każdy token się rozwiązuje.
 - **`@ModelActor` plus Swift 6.** Jeśli makro zgłosi problemy z izolacją, fallback to ręcznie napisany aktor z własnym `ModelContext`.
-- **Testy pakietów w `xctestplan`.** Identyfikatory kontenerów mogą wymagać korekty. Plan B: uruchamianie osobnych schematów pakietów w `Makefile`.
+- **Testy pakietu w `xctestplan`.** Identyfikator kontenera (`container:CourierModules`) może wymagać korekty. Plan B: `xcodebuild test` na schematach pakietu w `Makefile`.
 - **Wybudzenie po `notBefore` a zawieszenie aplikacji.** W tle proces może być wstrzymany, więc `wakeTask` nie odpali. Rekompensuje to drain przy `foreground`. Brak gwarancji wysyłki w tle jest świadomym ograniczeniem (bez background fetch).
 
 Wyniki spike'ów: do uzupełnienia po Fazie 0.
