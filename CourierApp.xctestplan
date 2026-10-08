@@ -29,13 +29,6 @@
     {
       "target" : {
         "containerPath" : "container:CourierApp.xcodeproj",
-        "identifier" : "8E48DB9230384E7700DE107A",
-        "name" : "CourierAppTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:CourierApp.xcodeproj",
         "identifier" : "8E48DB9C30384E7700DE107A",
         "name" : "CourierAppUITests"
       }

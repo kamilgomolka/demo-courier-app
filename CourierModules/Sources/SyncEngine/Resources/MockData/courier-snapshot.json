@@ -1,0 +1,140 @@
+{
+  "shift": {
+    "id": "shift-2026-10-08",
+    "status": "scheduled"
+  },
+  "tasks": [
+    {
+      "id": "task-01",
+      "recipientName": "Anna Kowalska",
+      "deliveryAddress": "ul. Marszałkowska 12/4, Warszawa",
+      "packageSummary": "Small parcel, 1.2 kg",
+      "payout": "14.50",
+      "status": "new",
+      "sortOrder": 1,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-02",
+      "recipientName": "Piotr Nowak",
+      "deliveryAddress": "ul. Puławska 45, Warszawa",
+      "packageSummary": "Documents envelope",
+      "payout": "9.00",
+      "status": "new",
+      "sortOrder": 2,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-03",
+      "recipientName": "Katarzyna Wiśniewska",
+      "deliveryAddress": "al. Jerozolimskie 101/12, Warszawa",
+      "packageSummary": "Electronics box, 3.4 kg",
+      "payout": "22.00",
+      "status": "new",
+      "sortOrder": 3,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-04",
+      "recipientName": "Marek Wójcik",
+      "deliveryAddress": "ul. Złota 59, Warszawa",
+      "packageSummary": "Books (3 items)",
+      "payout": "12.75",
+      "status": "new",
+      "sortOrder": 4,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-05",
+      "recipientName": "Magdalena Kamińska",
+      "deliveryAddress": "ul. Mokotowska 33/7, Warszawa",
+      "packageSummary": "Clothing bag",
+      "payout": "11.00",
+      "status": "new",
+      "sortOrder": 5,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-06",
+      "recipientName": "Tomasz Lewandowski",
+      "deliveryAddress": "ul. Świętokrzyska 18, Warszawa",
+      "packageSummary": "Fragile: ceramics, 2.1 kg",
+      "payout": "25.50",
+      "status": "new",
+      "sortOrder": 6,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-07",
+      "recipientName": "Agnieszka Zielińska",
+      "deliveryAddress": "ul. Chmielna 21/3, Warszawa",
+      "packageSummary": "Pharmacy order",
+      "payout": "8.50",
+      "status": "new",
+      "sortOrder": 7,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-08",
+      "recipientName": "Krzysztof Szymański",
+      "deliveryAddress": "ul. Nowy Świat 64, Warszawa",
+      "packageSummary": "Groceries crate, 6 kg",
+      "payout": "18.00",
+      "status": "new",
+      "sortOrder": 8,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-09",
+      "recipientName": "Joanna Woźniak",
+      "deliveryAddress": "ul. Krucza 24/26, Warszawa",
+      "packageSummary": "Small parcel, 0.8 kg",
+      "payout": "13.00",
+      "status": "new",
+      "sortOrder": 9,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-10",
+      "recipientName": "Michał Dąbrowski",
+      "deliveryAddress": "ul. Wilcza 50/8, Warszawa",
+      "packageSummary": "Toolbox, 5.5 kg",
+      "payout": "20.00",
+      "status": "new",
+      "sortOrder": 10,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-11",
+      "recipientName": "Ewa Kozłowska",
+      "deliveryAddress": "ul. Hoża 41/15, Warszawa",
+      "packageSummary": "Gift box",
+      "payout": "15.25",
+      "status": "new",
+      "sortOrder": 11,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    },
+    {
+      "id": "task-12",
+      "recipientName": "Paweł Jankowski",
+      "deliveryAddress": "ul. Koszykowa 79, Warszawa",
+      "packageSummary": "Monitor, 7 kg",
+      "payout": "27.00",
+      "status": "new",
+      "sortOrder": 12,
+      "shiftID": "shift-2026-10-08",
+      "assignedAt": "2026-10-08T06:30:00Z"
+    }
+  ]
+}

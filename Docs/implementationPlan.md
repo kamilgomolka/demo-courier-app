@@ -1,6 +1,6 @@
 # CourierApp: plan implementacji
 
-Status: Plan gotowy, impelmentacja nie zaczęta.
+Status: Fazy 0 do 8 zaimplementowane. Bramka (`make lint`, `make build`, `make test`) zielona na Xcode 26.6, iPhone 17 Pro, iOS 26.5. Niezweryfikowane: wygląd UI, płynność drag and drop, ścieżka Xcode na runnerze CI.
 
 Środowisko: Xcode 26.6 (Swift 6.3.3), iPhone 17 Pro, iOS 26.5. Komendy buildowe uruchamiane z `DEVELOPER_DIR=/Applications/Xcode_26_6.app/Contents/Developer`, bo `xcode-select` już raz przeskoczył na 27.1.
 
@@ -393,4 +393,17 @@ Repozytorium startowe jest kopią szablonu mono-repo (monolityczny host). Faza 0
 - **Testy pakietu w `xctestplan`.** Identyfikator kontenera (`container:CourierModules`) może wymagać korekty. Plan B: `xcodebuild test` na schematach pakietu w `Makefile`.
 - **Wybudzenie po `notBefore` a zawieszenie aplikacji.** W tle proces może być wstrzymany, więc `wakeTask` nie odpali. Rekompensuje to drain przy `foreground`. Brak gwarancji wysyłki w tle jest świadomym ograniczeniem (bez background fetch).
 
-Wyniki spike'ów: do uzupełnienia po Fazie 0.
+Wyniki spike'ów (Faza 0):
+
+1. `@Model` plus `@ModelActor` przy pełnym strictness (strict memory safety, warnings-as-errors): działa bez wyjątków. `LocalStore` to `actor` zgodny z `ModelActor` (ręczny `DefaultSerialModelExecutor`).
+2. Symbole String Catalog w pakiecie (`Text(.dashboardShiftCardStartButton)`, `String(localized: .klucz)`): działają, Plan B niepotrzebny.
+3. Symbole kolorów z `Colors.xcassets` (`Color(.accent)`), w tym wariant Dark: działają, test `PaletteTests` sprawdza rozwiązywanie każdego tokenu w obu trybach.
+4. Test Swift Testing w pakiecie: Plan B. Testy pakietu nie są widoczne w `CourierApp.xctestplan`, więc `make test` = `test-package` (`xcodebuild test -scheme CourierModules` w `CourierModules/`) plus `test-app` (UI testy hosta). Warnings-as-errors przez flagi `SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES` w `Makefile`, bo `treatAllWarnings` w `Package.swift` koliduje z `-suppress-warnings` przy budowaniu pakietu z hosta.
+
+Odstępstwa wprowadzone w trakcie implementacji:
+
+- `TimeSource.sleep(until:)` zamiast wstrzykiwanego `Clock`: eliminuje wyścig między liczeniem względnego opóźnienia a przesunięciem zegara w testach.
+- Plik store'u SwiftData ma jawną nazwę `CourierStore`, żeby nie kolidować z `default.store` z innych prototypów o tym samym bundle id.
+- Zadanie po `reportException` zamyka ekran szczegółów (brak Undo dla wyjątku).
+- `Done`, wygaśnięcie okna Undo i `onDisappear` przechodzą przez ten sam idempotentny `commitDelivery`; `onFinish` jest wołane najwyżej raz.
+- UI smoke test (Faza 8) obejmuje: trzy taby, `Start Delivery → Mark Delivered → Undo`, `Done`, historię, wyjątek `Other` z walidacją, ekran Settings.

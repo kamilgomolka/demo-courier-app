@@ -1,114 +1,108 @@
-# [Demo Name]
+# CourierApp
 
-[![CI](https://github.com/kamilgomolka/<repo-name>/actions/workflows/ci.yml/badge.svg)](https://github.com/kamilgomolka/<repo-name>/actions/workflows/ci.yml)
-[![Swift](https://img.shields.io/badge/Swift-6.0-F05138.svg)](https://swift.org)
+[![CI](https://github.com/kamilgomolka/demo-courier-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/kamilgomolka/demo-courier-v2/actions/workflows/ci.yml)
+[![Swift](https://img.shields.io/badge/Swift-6.3-F05138.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/iOS-26.0%2B-000000.svg)](https://developer.apple.com/ios/)
-[![Xcode](https://img.shields.io/badge/Xcode-26-1575F9.svg)](https://developer.apple.com/xcode/)
+[![Xcode](https://img.shields.io/badge/Xcode-26.6-1575F9.svg)](https://developer.apple.com/xcode/)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
 
-<!-- Replace <repo-name> in the CI badge above, then delete this line once the sections below are filled in. -->
-
-<!-- One or two sentences: what this demo explores and why (e.g. the WWDC session, article, or interview prompt it's based on — link the source material if there is one). Mention target platform(s) if not "iPhone + iPad" (e.g. "iPad only"). -->
+An architecture playground for a courier's daily workflow (iPhone only): offline-first, optimistic UI, outbox-based sync, micro-modules in a local Swift package, Swift 6 strict concurrency. Features are kept to the minimum needed to exercise those mechanisms; the planning document is in [`Docs/implementationPlan.md`](Docs/implementationPlan.md).
 
 ## What It Shows
 
-<!--
-One bullet per notable API/technique/pattern this demo showcases, e.g.:
-
-- `UITabBarController.mode = .tabSidebar` — floating tab bar, collapsible sidebar
-
-If the app has more than one independent screen reachable from the root menu, use a table instead:
-
-| Demo | What it shows | Key API |
-| --- | --- | --- |
-| ... | ... | ... |
--->
-
-## Screenshots / Recordings
-
-<!--
-Drag a screenshot or screen recording into a GitHub PR/issue comment (or the editor toolbar when editing this file on GitHub) to get a hosted URL, then embed it below:
-
-<img width="400" alt="Description" src="https://github.com/user-attachments/assets/..." />
-https://github.com/user-attachments/assets/...
--->
+- **Offline-first with an outbox.** Every mutation is written to SwiftData and enqueues a `SyncJob` in the same transaction. The UI only ever reads local state.
+- **Single outbox consumer.** `SyncActor` wakes at the earliest `notBefore`, drains FIFO, sends each job at most once per cycle and uses the job id as `Idempotency-Key` (at-least-once delivery, idempotent server).
+- **Delayed commit with Undo.** "Mark Delivered" holds its sync job for 5 s (`SyncPolicy.undoWindow`). Undo removes the job; `Done`, expiry or leaving the screen release it.
+- **Debounced reorder.** Drag-and-drop updates the queue optimistically; consecutive moves coalesce into one job whose deadline slides forward.
+- **Observation without `@Query`.** Features consume `AsyncStream`s from repository protocols and never see `@Model`.
+- **Network simulation.** Settings can force offline, latency range and failure type, show the outbox with attempts and last failure, reset local data, and trigger a manual sync.
+- **Injected time.** `TimeSource` lets tests drive scheduling with a manual clock.
 
 ## Architecture
 
-Plain SwiftUI — no UIKit app lifecycle, no Storyboards/XIBs, no third-party dependencies. One `View` per feature under `Source/Features/`, pushed from `MainView` onto a `NavigationStack` in `App`.
-
-<!-- State the specific pattern this demo uses if it's not plain MVC (MVVM, coordinator, etc.), and why. -->
-
-```
-Config/                                     # Project and target configuration, kept out of the Xcode UI
-├── Local.xcconfig.example                  # Template for the untracked Local.xcconfig (Team ID)
-├── Project/
-│   ├── ProjectBase.xcconfig                # Platform, Swift language mode and strictness, signing style
-│   ├── ProjectDebug.xcconfig               # Warnings-as-errors
-│   └── ProjectRelease.xcconfig
-└── Target/
-    ├── TargetBase.xcconfig                 # Versioning, product name, bundle identifier, actor isolation
-    ├── TargetCourierApp.xcconfig         # App: generated Info.plist keys, asset catalog names
-    ├── TargetCourierAppTests.xcconfig
-    └── TargetCourierAppUITests.xcconfig
-
-CourierApp/
-├── Source/
-│   ├── Application/
-│   │   └── App.swift                       # `@main` SwiftUI App, `WindowGroup` + `NavigationStack`
-│   ├── MainView.swift                      # Entry point: one button per feature
-│   └── Features/
-│       └── ...                             # One folder/file per feature demo
-└── SupportingFiles/
-    ├── Assets.xcassets
-    └── Localizable.xcstrings
+```mermaid
+graph TD
+    App[CourierApp host] --> AppNavigation
+    AppNavigation --> FeatureDashboard
+    AppNavigation --> FeatureDelivery
+    AppNavigation --> FeatureHistory
+    AppNavigation --> FeatureSettings
+    AppNavigation --> LocalStorage
+    AppNavigation --> SyncEngine
+    FeatureDashboard --> DesignSystem
+    FeatureDelivery --> DesignSystem
+    FeatureHistory --> DesignSystem
+    FeatureSettings --> DesignSystem
+    FeatureDashboard --> Domain
+    FeatureDelivery --> Domain
+    FeatureHistory --> Domain
+    FeatureSettings --> Domain
+    LocalStorage --> Domain
+    SyncEngine --> Domain
+    DesignSystem
 ```
 
-Xcode's own default warning flags still live in `project.pbxproj`; everything this project decides for itself lives in `Config/`.
+```
+CourierApp/                  # Host: App.swift only, links the AppNavigation product
+CourierAppUITests/           # Black-box UI tests (XCTest) driven by accessibility identifiers
+CourierModules/              # Local Swift package
+├── Sources/
+│   ├── Domain/              # Models, state machine, repository protocols (nonisolated)
+│   ├── DomainTestSupport/   # Fakes, fixtures, manual clock (test targets only)
+│   ├── LocalStorage/        # SwiftData schema and the LocalStore actor
+│   ├── SyncEngine/          # SyncActor and the mock API (static JSON, latency, simulated failures)
+│   ├── DesignSystem/        # Color tokens, typography, reusable views
+│   ├── Feature{Dashboard,Delivery,History,Settings}/
+│   └── AppNavigation/       # Composition root, tabs, router
+└── Tests/                   # Swift Testing, one test target per module
+Config/                      # xcconfig: language mode, strictness, warnings-as-errors
+```
+
+Features do not know each other. Dashboard reports `onSelectTask(id)`, `AppNavigation` owns the paths and builds the destination from `FeatureDelivery`.
 
 ## Trade-offs & Production Notes
 
-<!-- Replace or extend the template-level notes below with ones specific to this demo. This is where deliberate omissions belong, so a reader can tell a shortcut from an oversight. -->
-
-- **iOS 26 only.** The deployment target tracks the newest SDK so demos can use current APIs without availability checks. A shipping app would support at least two major versions back.
-- **No coordinator, router, or dependency injection.** Features are pushed directly by `NavigationLink` from `MainView`. At production scale this becomes a navigation abstraction with injected dependencies; at demo scale it would be indirection without a payoff.
-- **Localization is wired up, not completed.** Screen titles go through `Localizable.xcstrings` so the string catalog and its generated symbols stay exercised; incidental demo copy is inlined.
-- **Test coverage is a smoke layer, not a safety net.** A unit test that the SwiftUI view graph builds, plus UI tests that launch the app and open the sample feature. Enough to keep CI honest about the app actually starting.
+- **Mock backend.** `MockCourierAPI` reads a bundled JSON snapshot and accepts duplicate `Idempotency-Key`s. The initial load runs only on an empty database and after a reset; there is no pull-to-refresh and merging is insert-only.
+- **No background delivery.** Jobs are drained while the app runs, on launch, foreground, screen appearance and connectivity changes. A suspended process does not send anything; the next foreground drains overdue jobs.
+- **Undo lives only on the task screen.** The 5 s window is anchored to the stored `completedAt`, so a relaunch inside the window keeps the job held and Undo working.
+- **Contracts in `Domain` are the integration surface.** Fakes in `DomainTestSupport` implement the same protocols, which keeps UI tests of models free of SwiftData.
+- **Default isolation differs per layer.** `MainActor` for UI modules, `nonisolated` for `Domain`, `LocalStorage` and `SyncEngine`, so storage and sync stay off the main thread.
+- **No third-party dependencies.** iOS 26 only.
+- **Not covered by automation:** visual polish and drag-and-drop feel, background suspension behaviour, and the CI runner's Xcode path until the first CI run.
 
 ## Requirements
 
-- Xcode 26 or later
-- iOS 26.0+ (`IPHONEOS_DEPLOYMENT_TARGET`)
-- Swift 6 language mode, strict concurrency, strict memory safety, `MainActor` default isolation
+- Xcode 26.6 (CI pins `/Applications/Xcode_26.6.app`)
+- iOS 26.0+ deployment target; tests run on iPhone 17 Pro, iOS 26.5
+- Swift 6 language mode, strict concurrency, strict memory safety
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/kamilgomolka/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/kamilgomolka/demo-courier-v2.git
+cd demo-courier-v2
 open CourierApp.xcodeproj
 ```
 
-Build and run the `CourierApp` scheme on an iOS 26+ Simulator. Signing is not required for the Simulator. To run on a device, copy the local configuration template and fill in your Apple Developer Team ID:
+Run the `CourierApp` scheme on an iOS 26+ Simulator. Signing is not required for the Simulator. For a device, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set your Team ID (the file is untracked).
 
-```bash
-cp Config/Local.xcconfig.example Config/Local.xcconfig
-```
-
-`Config/Local.xcconfig` is untracked, so no Team ID ever lands in version control.
+Launching with `--ui-testing` uses an in-memory store and short mock latency.
 
 ## Tooling
 
 ```bash
-make build         # compile for the Simulator
+make build         # build the app for the Simulator (warnings are errors)
+make test          # package tests, then UI tests
+make test-package  # CourierModules unit tests only
+make test-app      # host UI tests only
 make format        # apply swift-format in place
+make lint          # swift-format --strict, no changes
 make destinations  # list available Simulator destinations
 ```
 
-`swift-format` ships with the Xcode toolchain, so there is nothing to install.
-Automation: Command `make format` is configured as a Run Script build phase (before Compile Sources), so every build formats sources in place.
+Override the Simulator with `make build SIMULATOR='iPhone 17 Pro' OS=26.5`. If `xcode-select` points at another Xcode, prefix commands with `DEVELOPER_DIR=/Applications/Xcode_26_6.app/Contents/Developer`.
 
-Override the Simulator with `make build SIMULATOR='iPhone 17 Pro'`.
+Manual log inspection: `xcrun simctl spawn booted log stream --predicate 'subsystem == "com.kamilgomolka.CourierApp"'`.
 
 ## Built with an Agentic Workflow
 

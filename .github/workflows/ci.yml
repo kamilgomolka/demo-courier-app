@@ -13,11 +13,16 @@ jobs:
   test:
     name: Build & Test
     runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      OS: latest
     steps:
       - uses: actions/checkout@v7
 
-      - name: Show toolchain
-        run: xcodebuild -version
+      - name: Verify toolchain
+        run: |
+          xcodebuild -version | tee /dev/stderr | grep -q "Xcode 26.6"
+          xcrun simctl list runtimes
 
       # Simulator device names change between Xcode releases; this makes a
       # destination mismatch diagnosable from the log instead of guesswork.
@@ -32,7 +37,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-results
-          path: TestResults.xcresult
+          path: |
+            PackageTestResults.xcresult
+            TestResults.xcresult
 
   lint:
     name: Lint
