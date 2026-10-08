@@ -36,6 +36,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		8E31141C307824BB006102B1 /* Docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Docs;
+			sourceTree = "<group>";
+		};
 		8E48DB7F30384E7600DE107A /* CourierApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = CourierApp;
@@ -103,9 +108,10 @@
 				8E0AB8F4303C493E00F59357 /* Config */,
 				8E48DB7F30384E7600DE107A /* CourierApp */,
 				8E48DBA030384E7700DE107A /* CourierAppUITests */,
+				8E31141C307824BB006102B1 /* Docs */,
+				8E8A18B63038522E001F4A1B /* CourierApp.xctestplan */,
 				8E8A18B43038522E001F4A1B /* LICENSE */,
 				8E8A18B53038522E001F4A1B /* README.md */,
-				8E8A18B63038522E001F4A1B /* CourierApp.xctestplan */,
 				8E48DB7E30384E7600DE107A /* Products */,
 			);
 			sourceTree = "<group>";
