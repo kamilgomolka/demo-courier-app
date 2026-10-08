@@ -47,14 +47,17 @@ CourierApp/                  # Host: App.swift only, links the AppNavigation pro
 CourierAppUITests/           # Black-box UI tests (XCTest) driven by accessibility identifiers
 CourierModules/              # Local Swift package
 ├── Sources/
-│   ├── Domain/              # Models, state machine, repository protocols (nonisolated)
-│   ├── DomainTestSupport/   # Fakes, fixtures, manual clock (test targets only)
-│   ├── LocalStorage/        # SwiftData schema and the LocalStore actor
-│   ├── SyncEngine/          # SyncActor and the mock API (static JSON, latency, simulated failures)
-│   ├── DesignSystem/        # Color tokens, typography, reusable views
-│   ├── Feature{Dashboard,Delivery,History,Settings}/
-│   └── AppNavigation/       # Composition root, tabs, router
-└── Tests/                   # Swift Testing, one test target per module
+│   ├── Core/
+│   │   ├── Domain/          # Models, state machine, repository protocols (nonisolated)
+│   │   ├── DomainTestSupport/ # Fakes, fixtures, manual clock (test targets only)
+│   │   ├── LocalStorage/    # SwiftData schema and the LocalStore actor
+│   │   ├── SyncEngine/      # SyncActor and the mock API (static JSON, latency, simulated failures)
+│   │   └── DesignSystem/    # Color tokens, typography, reusable views
+│   ├── Features/
+│   │   └── Feature{Dashboard,Delivery,History,Settings}/
+│   └── App/
+│       └── AppNavigation/   # Composition root, tabs, router
+└── Tests/                   # Swift Testing, one test target per module, mirrors Sources/{Core,Features}
 Config/                      # xcconfig: language mode, strictness, warnings-as-errors
 ```
 

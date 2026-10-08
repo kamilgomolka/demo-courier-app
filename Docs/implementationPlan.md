@@ -90,29 +90,34 @@ demo-courier-v2/
 ├── CourierModules/                       # jeden lokalny pakiet SPM
 │   ├── Package.swift                     # wszystkie targety i wspólne strictSettings
 │   ├── Sources/
-│   │   ├── AppNavigation/
-│   │   ├── Domain/
-│   │   ├── DomainTestSupport/            # mocki, fake'i, fixtury (tylko dla testów)
-│   │   ├── DesignSystem/
-│   │   ├── FeatureDashboard/
-│   │   ├── FeatureDelivery/
-│   │   ├── FeatureHistory/
-│   │   ├── FeatureSettings/
-│   │   ├── LocalStorage/
-│   │   └── SyncEngine/
+│   │   ├── Core/
+│   │   │   ├── Domain/
+│   │   │   ├── DomainTestSupport/        # mocki, fake'i, fixtury (tylko dla testów)
+│   │   │   ├── DesignSystem/
+│   │   │   ├── LocalStorage/
+│   │   │   └── SyncEngine/
+│   │   ├── Features/
+│   │   │   ├── FeatureDashboard/
+│   │   │   ├── FeatureDelivery/
+│   │   │   ├── FeatureHistory/
+│   │   │   └── FeatureSettings/
+│   │   └── App/
+│   │       └── AppNavigation/
 │   └── Tests/
-│       ├── DomainTests/
-│       ├── DesignSystemTests/
-│       ├── FeatureDashboardTests/        # Swift Testing + DomainTestSupport
-│       ├── FeatureDeliveryTests/
-│       ├── FeatureHistoryTests/
-│       ├── FeatureSettingsTests/
-│       ├── LocalStorageTests/
-│       └── SyncEngineTests/
+│       ├── Core/
+│       │   ├── DomainTests/
+│       │   ├── DesignSystemTests/
+│       │   ├── LocalStorageTests/
+│       │   └── SyncEngineTests/
+│       └── Features/
+│           ├── FeatureDashboardTests/    # Swift Testing + DomainTestSupport
+│           ├── FeatureDeliveryTests/
+│           ├── FeatureHistoryTests/
+│           └── FeatureSettingsTests/
 └── Docs/implementationPlan.md
 ```
 
-`Sources/<Moduł>/` z `Resources/` tam, gdzie potrzebne. Pakiet: `swift-tools-version: 6.2`, `defaultLocalization: "en"`, `platforms: [.iOS(.v26)]`. Host linkuje wyłącznie bibliotekę `AppNavigation`.
+`Sources/<Warstwa>/<Moduł>/` (warstwy: `Core`, `Features`, `App`; ścieżki ustawia helper w `Package.swift` przez `layer:`) z `Resources/` tam, gdzie potrzebne. Pakiet: `swift-tools-version: 6.2`, `defaultLocalization: "en"`, `platforms: [.iOS(.v26)]`. Host linkuje wyłącznie bibliotekę `AppNavigation`.
 
 Nazwy modułów bez zmian. Sprawdzone pod kątem kolizji z modułami systemowymi: brak. Reguła wewnętrzna: żaden typ nie nazywa się tak jak jego moduł.
 
@@ -262,7 +267,7 @@ Pasek odliczania: `ProgressView(timerInterval:countsDown:)` z `completedAt ... c
 
 ### 4.10 Lokalizacja
 
-- Jeden `Localizable.xcstrings` per moduł z UI, tworzony razem z pierwszym ekranem modułu, w `Sources/<Moduł>/Resources/`. Infrastruktura (symbole w pakiecie) jest sprawdzana spike'iem w Fazie 0.
+- Jeden `Localizable.xcstrings` per moduł z UI, tworzony razem z pierwszym ekranem modułu, w `Sources/<Warstwa>/<Moduł>/Resources/`. Infrastruktura (symbole w pakiecie) jest sprawdzana spike'iem w Fazie 0.
 - Klucze: `<ekran>.<element>.<rola>`, camelCase w segmentach (np. `dashboard.shiftCard.startButton`).
 - Dostęp przez wygenerowane symbole (jak w szablonie: `String(localized: .klucz)`). Zero literałów w kodzie.
 - Treści wspólne dla kilku feature'ów (np. nazwy powodów wyjątku w `FeatureDelivery` i `FeatureHistory`) są duplikowane w ich katalogach. Świadomy koszt niezależności modułów.
