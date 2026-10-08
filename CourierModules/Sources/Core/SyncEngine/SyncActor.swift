@@ -22,6 +22,7 @@ public actor SyncActor: SyncControlling {
 
     private var observationTask: Task<Void, Never>?
     private var wakeTask: Task<Void, Never>?
+    private var wakeGeneration = 0
     private var drainTask: Task<Void, Never>?
     private var initialLoadTask: Task<Result<Void, SyncError>, Never>?
     private var resetTask: Task<RepositoryError?, Never>?
@@ -117,6 +118,8 @@ public actor SyncActor: SyncControlling {
     private func scheduleWake() {
         wakeTask?.cancel()
         wakeTask = nil
+        wakeGeneration += 1
+        let generation = wakeGeneration
         let now = timeSource.now()
         guard let nextDeadline = latestJobs.map(\.notBefore).filter({ $0 > now }).min() else { return }
         wakeTask = Task { [weak self, timeSource] in
@@ -125,11 +128,12 @@ public actor SyncActor: SyncControlling {
             } catch {
                 return
             }
-            await self?.wakeFired()
+            await self?.wakeFired(generation: generation)
         }
     }
 
-    private func wakeFired() {
+    private func wakeFired(generation: Int) {
+        guard generation == wakeGeneration else { return }
         wakeTask = nil
         startDrain()
         scheduleWake()

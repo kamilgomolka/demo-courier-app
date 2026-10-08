@@ -132,6 +132,18 @@ struct TaskTransitionTests {
         #expect(try await fixture.task("task-1").status == .delivered)
     }
 
+    @Test func undoIsRejectedAfterShiftEnds() async throws {
+        let fixture = try await StoreFixture.make()
+        try await fixture.store.startDelivery(id: "task-1")
+        try await fixture.store.markDelivered(id: "task-1")
+        try await fixture.store.endShift()
+
+        await #expect(throws: RepositoryError.shiftNotActive) {
+            try await fixture.store.undoDelivery(id: "task-1")
+        }
+        #expect(try await fixture.task("task-1").status == .delivered)
+    }
+
     @Test func commitMakesJobEligibleImmediately() async throws {
         let fixture = try await StoreFixture.make()
         try await fixture.store.startDelivery(id: "task-1")

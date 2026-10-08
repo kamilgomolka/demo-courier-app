@@ -34,6 +34,8 @@ extension LocalStore {
         try transact { () throws(RepositoryError) in
             let record = try taskRecord(id: id)
             let updated = try TaskStateMachine.apply(.undoDelivery, to: try domainTask(record))
+            let shift = try activeShiftRecord()
+            guard record.shiftID == shift.id else { throw .taskNotInActiveShift }
             guard let holdingJob = try pendingDeliveryJob(taskID: id), holdingJob.job.notBefore > timeSource.now()
             else {
                 throw .undoWindowClosed

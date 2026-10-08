@@ -58,6 +58,26 @@ struct SyncSchedulingTests {
         #expect(await eventually { harness.api.requests.count == 1 })
     }
 
+    @Test func replacingJobWhileWakeFiresLeavesExactlyOneSleeperAndNoneAfterStop() async throws {
+        let harness = FakeSyncHarness()
+        let original = harness.makeJob(taskID: "a", notBeforeOffset: 5)
+        harness.repository.add(original)
+        await harness.start()
+        #expect(await eventually { harness.timeSource.pendingSleeperCount == 1 })
+
+        harness.timeSource.advance(by: 5)
+        harness.repository.add(harness.makeJob(taskID: "b", notBeforeOffset: 5))
+
+        #expect(await eventually { harness.api.requests.count == 1 })
+        #expect(await eventually { harness.timeSource.pendingSleeperCount == 1 })
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(harness.timeSource.pendingSleeperCount == 1)
+
+        await harness.syncActor.stop()
+
+        #expect(harness.timeSource.pendingSleeperCount == 0)
+    }
+
     @Test func eligibleJobsAreSentInCreationOrderEachExactlyOnce() async throws {
         let harness = FakeSyncHarness()
         let newest = harness.makeJob(taskID: "c", createdOffset: -1)
