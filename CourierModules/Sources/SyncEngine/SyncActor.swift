@@ -26,6 +26,7 @@ public actor SyncActor: SyncControlling {
     private var initialLoadTask: Task<Result<Void, SyncError>, Never>?
     private var resetTask: Task<RepositoryError?, Never>?
     private var isRerunRequested = false
+    private var isRetryOfFailedJobsRequested = false
     private var latestJobs: [SyncJob] = []
     private var lastFingerprint: Set<JobFingerprint>?
 
@@ -57,7 +58,7 @@ public actor SyncActor: SyncControlling {
         if let resetTask {
             _ = await resetTask.value
         }
-        await startDrain().value
+        await startDrain(retryingFailedJobs: true).value
     }
 
     public func loadInitialData() async throws(SyncError) {
@@ -137,7 +138,10 @@ public actor SyncActor: SyncControlling {
     // MARK: Draining
 
     @discardableResult
-    private func startDrain() -> Task<Void, Never> {
+    private func startDrain(retryingFailedJobs: Bool = false) -> Task<Void, Never> {
+        if retryingFailedJobs {
+            isRetryOfFailedJobsRequested = true
+        }
         if let drainTask {
             isRerunRequested = true
             return drainTask
@@ -150,12 +154,14 @@ public actor SyncActor: SyncControlling {
     private func runDrainCycles() async {
         repeat {
             isRerunRequested = false
-            await drainOnce()
+            let retriesFailedJobs = isRetryOfFailedJobsRequested
+            isRetryOfFailedJobsRequested = false
+            await drainOnce(retryingFailedJobs: retriesFailedJobs)
         } while isRerunRequested && !Task.isCancelled
         drainTask = nil
     }
 
-    private func drainOnce() async {
+    private func drainOnce(retryingFailedJobs: Bool) async {
         let jobs: [SyncJob]
         do {
             jobs = try await jobRepository.eligibleJobs(at: timeSource.now())
@@ -163,13 +169,22 @@ public actor SyncActor: SyncControlling {
             Log.sync.error("Failed to read outbox: \(String(describing: error), privacy: .public)")
             return
         }
+        var blockedTaskIDs: Set<TaskID> = []
         for job in jobs {
             guard !Task.isCancelled else { return }
+            let taskID = job.kind.taskID
+            if let taskID, blockedTaskIDs.contains(taskID) { continue }
+            if job.attemptCount > 0 && !retryingFailedJobs {
+                if let taskID { blockedTaskIDs.insert(taskID) }
+                continue
+            }
             do {
                 try await api.send(job)
             } catch {
                 await handleSendFailure(error, for: job)
-                return
+                if error == .offline || error == .cancelled { return }
+                if let taskID { blockedTaskIDs.insert(taskID) }
+                continue
             }
             do {
                 try await jobRepository.markSynced(jobID: job.id)

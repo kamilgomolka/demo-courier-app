@@ -227,6 +227,16 @@ struct TaskTransitionTests {
         #expect(try await fixture.task("task-1").syncState == .pending)
     }
 
+    @Test func undecodableJobIsSkippedWithoutBreakingQueries() async throws {
+        let fixture = try await StoreFixture.make()
+        try await fixture.store.startDelivery(id: "task-1")
+        try await fixture.store.insertUndecodableJob()
+
+        #expect(try await fixture.jobs().count == 1)
+        #expect(try await fixture.task("task-1").syncState == .pending)
+        #expect(try await fixture.store.eligibleJobs(at: fixture.timeSource.now()).count == 1)
+    }
+
     @Test func eligibleJobsAreOrderedByCreationAndFilteredByNotBefore() async throws {
         let fixture = try await StoreFixture.make()
         try await fixture.store.startDelivery(id: "task-1")

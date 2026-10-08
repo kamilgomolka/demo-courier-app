@@ -50,6 +50,22 @@ struct StoreFixture {
     }
 }
 
+extension LocalStore {
+    func insertUndecodableJob() throws {
+        modelContext.insert(
+            SyncJobRecord(
+                id: UUID(),
+                kindData: Data("not json".utf8),
+                createdAt: Date(timeIntervalSince1970: 0),
+                notBefore: Date(timeIntervalSince1970: 0),
+                attemptCount: 0,
+                lastFailure: nil
+            )
+        )
+        try modelContext.save()
+    }
+}
+
 func firstValue<Value: Sendable>(of stream: AsyncStream<Value>) async -> Value? {
     var iterator = stream.makeAsyncIterator()
     return await iterator.next()

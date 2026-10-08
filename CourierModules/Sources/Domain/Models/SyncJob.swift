@@ -3,6 +3,11 @@ public import Foundation
 public enum SyncJobKind: Codable, Hashable, Sendable {
     case updateStatus(taskID: TaskID, status: TaskStatus, exceptionReason: ExceptionReason?)
     case reorder(orderedTaskIDs: [TaskID])
+
+    public var taskID: TaskID? {
+        guard case .updateStatus(let taskID, _, _) = self else { return nil }
+        return taskID
+    }
 }
 
 public struct SyncJob: Equatable, Identifiable, Sendable {

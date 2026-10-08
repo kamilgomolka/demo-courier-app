@@ -120,6 +120,28 @@ struct SyncSchedulingTests {
         #expect(harness.api.requests.count == 1)
     }
 
+    @Test func failedJobDoesNotBlockOtherTasksButBlocksItsOwnTask() async throws {
+        let harness = FakeSyncHarness()
+        harness.conditions.save(NetworkConditions(latencyRange: 0...0, simulatedFailure: .serverError))
+        harness.repository.add(harness.makeJob(taskID: "a", createdOffset: -3))
+        await harness.start()
+        #expect(await eventually { harness.repository.jobs.current.first?.attemptCount == 1 })
+
+        harness.conditions.save(NetworkConditions(latencyRange: 0...0))
+        harness.repository.add(harness.makeJob(taskID: "b", createdOffset: -2))
+        harness.repository.add(harness.makeJob(taskID: "a", status: .delivered, createdOffset: -1))
+
+        #expect(await eventually { harness.repository.jobs.current.count == 2 })
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(harness.api.requests.map(\.path) == ["/tasks/a/status", "/tasks/b/status"])
+        #expect(harness.repository.jobs.current.allSatisfy { $0.kind.taskID == "a" })
+
+        await harness.syncActor.requestSync(.manual)
+
+        #expect(harness.repository.jobs.current.isEmpty)
+        #expect(harness.api.requests.map(\.path).suffix(2) == ["/tasks/a/status", "/tasks/a/status"])
+    }
+
     @Test func offlineStopsTheCycleAndKeepsJobsUntouched() async throws {
         let harness = FakeSyncHarness()
         harness.conditions.save(NetworkConditions(isOffline: true))

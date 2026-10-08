@@ -1,5 +1,6 @@
 public import Domain
 import Foundation
+import os
 
 extension LocalStore {
     func allTasks() throws(RepositoryError) -> [DeliveryTask] {
@@ -36,9 +37,7 @@ extension LocalStore {
     }
 
     func jobsSnapshot() throws(RepositoryError) -> [SyncJob] {
-        try fetch(SyncJobRecord.self)
-            .map { record throws(RepositoryError) in try record.makeDomain() }
-            .sorted { $0.createdAt < $1.createdAt }
+        try decodableJobRecords().map(\.job)
     }
 
     func pendingStatusTaskIDs() throws(RepositoryError) -> Set<TaskID> {
@@ -72,11 +71,21 @@ extension LocalStore {
     func jobRecords(matching predicate: (SyncJob) -> Bool) throws(RepositoryError) -> [(
         record: SyncJobRecord, job: SyncJob
     )] {
-        try fetch(SyncJobRecord.self)
-            .map { record throws(RepositoryError) in (record, try record.makeDomain()) }
-            .filter { predicate($0.1) }
-            .sorted { $0.1.createdAt < $1.1.createdAt }
-            .map { (record: $0.0, job: $0.1) }
+        try decodableJobRecords().filter { predicate($0.job) }
+    }
+
+    private func decodableJobRecords() throws(RepositoryError) -> [(record: SyncJobRecord, job: SyncJob)] {
+        var decodable: [(record: SyncJobRecord, job: SyncJob)] = []
+        for record in try fetch(SyncJobRecord.self) {
+            do {
+                decodable.append((record: record, job: try record.makeDomain()))
+            } catch {
+                Log.storage.error(
+                    "Skipping undecodable sync job \(record.id, privacy: .public): \(String(describing: error), privacy: .public)"
+                )
+            }
+        }
+        return decodable.sorted { $0.job.createdAt < $1.job.createdAt }
     }
 }
 
