@@ -4,6 +4,7 @@ public func eventually(
 ) async -> Bool {
     let deadline = ContinuousClock.now.advanced(by: timeout)
     while ContinuousClock.now < deadline {
+        guard !Task.isCancelled else { return false }
         if await condition() {
             return true
         }

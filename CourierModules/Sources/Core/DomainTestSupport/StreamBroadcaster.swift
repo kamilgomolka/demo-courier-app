@@ -22,19 +22,17 @@ public final class StreamBroadcaster<Value: Sendable>: Sendable {
     }
 
     public func send(_ value: Value) {
-        let continuations = state.withLock { state -> [AsyncStream<Value>.Continuation] in
-            state.current = value
-            return Array(state.continuations.values)
+        update { $0 = value }
+    }
+
+    public func update(_ transform: (inout Value) -> Void) {
+        let (value, continuations) = state.withLock { state -> (Value, [AsyncStream<Value>.Continuation]) in
+            transform(&state.current)
+            return (state.current, Array(state.continuations.values))
         }
         for continuation in continuations {
             continuation.yield(value)
         }
-    }
-
-    public func update(_ transform: (inout Value) -> Void) {
-        var value = current
-        transform(&value)
-        send(value)
     }
 
     public func stream() -> AsyncStream<Value> {
