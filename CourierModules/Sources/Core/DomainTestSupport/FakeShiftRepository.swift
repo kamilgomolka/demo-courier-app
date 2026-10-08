@@ -12,6 +12,8 @@ public final class FakeShiftRepository: ShiftRepository {
     private struct State {
         var calls: [Call] = []
         var failure: RepositoryError?
+        var heldCalls: AsyncStream<Void>?
+        var heldCallsContinuation: AsyncStream<Void>.Continuation?
     }
 
     private let state = Mutex(State())
@@ -32,17 +34,39 @@ public final class FakeShiftRepository: ShiftRepository {
     }
 
     public func startShift() async throws(RepositoryError) {
-        try record(.startShift)
+        try await record(.startShift)
     }
 
     public func endShift() async throws(RepositoryError) {
-        try record(.endShift)
+        try await record(.endShift)
     }
 
-    private func record(_ call: Call) throws(RepositoryError) {
-        let failure = state.withLock { state -> RepositoryError? in
+    public func holdCalls() {
+        let (stream, continuation) = AsyncStream.makeStream(of: Void.self)
+        state.withLock {
+            $0.heldCalls = stream
+            $0.heldCallsContinuation = continuation
+        }
+    }
+
+    public func releaseCalls() {
+        let continuation = state.withLock { state -> AsyncStream<Void>.Continuation? in
+            defer {
+                state.heldCalls = nil
+                state.heldCallsContinuation = nil
+            }
+            return state.heldCallsContinuation
+        }
+        continuation?.finish()
+    }
+
+    private func record(_ call: Call) async throws(RepositoryError) {
+        let (failure, heldCalls) = state.withLock { state -> (RepositoryError?, AsyncStream<Void>?) in
             state.calls.append(call)
-            return state.failure
+            return (state.failure, state.heldCalls)
+        }
+        if let heldCalls {
+            for await _ in heldCalls {}
         }
         if let failure {
             throw failure

@@ -13,6 +13,7 @@ final class ShiftCardModel {
     private(set) var summary: ShiftSummary?
     private(set) var isShiftActive = false
     private(set) var actionFailure: RepositoryError?
+    private(set) var isPerformingAction = false
 
     @ObservationIgnored private let shiftRepository: any ShiftRepository
     @ObservationIgnored private let syncController: any SyncControlling
@@ -49,6 +50,9 @@ final class ShiftCardModel {
     }
 
     private func perform(_ action: () async throws(RepositoryError) -> Void) async {
+        guard !isPerformingAction else { return }
+        isPerformingAction = true
+        defer { isPerformingAction = false }
         do {
             try await action()
         } catch {

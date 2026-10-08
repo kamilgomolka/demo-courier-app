@@ -174,4 +174,48 @@ struct TaskDetailsModelTests {
         #expect(finishRecorder.count == 0)
         #expect(model.failure == .exceptionDetailsRequired)
     }
+
+    @Test func concurrentActionIsIgnoredWithoutFailure() async {
+        let model = makeModel()
+        taskRepository.holdCalls()
+        let first = Task { await model.startDelivery() }
+        #expect(await eventually { taskRepository.calls.count == 1 })
+        #expect(model.isPerformingAction)
+
+        await model.startDelivery()
+        await model.completeDelivery()
+
+        #expect(taskRepository.calls == [.startDelivery("task-1")])
+        #expect(model.failure == nil)
+        #expect(finishRecorder.count == 0)
+
+        taskRepository.releaseCalls()
+        await first.value
+        #expect(!model.isPerformingAction)
+    }
+
+    @Test func vanishingTaskFinishesOnlyAfterItWasLoaded() async {
+        let model = makeModel()
+        let run = Task { await model.run() }
+        _ = await eventually { taskRepository.activeTaskObserverCount(for: "task-1") == 1 }
+        #expect(finishRecorder.count == 0)
+
+        taskRepository.send(.fixture(), for: "task-1")
+        _ = await eventually { model.task != nil }
+        taskRepository.send(nil, for: "task-1")
+        _ = await eventually { finishRecorder.count == 1 }
+        taskRepository.send(.fixture(), for: "task-1")
+        taskRepository.send(nil, for: "task-1")
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(finishRecorder.count == 1)
+        run.cancel()
+    }
+
+    @Test func alertMessagesAreSpecificForKnownErrorsAndGenericOtherwise() {
+        #expect(RepositoryError.anotherTaskInTransit.alertMessage == .deliveryAlertAnotherTaskInTransit)
+        #expect(RepositoryError.undoWindowClosed.alertMessage == .deliveryAlertUndoWindowClosed)
+        #expect(RepositoryError.exceptionDetailsRequired.alertMessage == .deliveryAlertExceptionDetailsRequired)
+        #expect(RepositoryError.storageFailure("disk").alertMessage == .deliveryAlertMessage)
+    }
 }

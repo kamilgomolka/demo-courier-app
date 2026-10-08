@@ -41,7 +41,7 @@ public struct DashboardView: View {
             ) {
                 Button(String(localized: .dashboardAlertDismissButton)) {}
             } message: {
-                Text(.dashboardAlertMessage)
+                Text((shiftCardModel.actionFailure ?? queueModel.failure)?.alertMessage ?? .dashboardAlertMessage)
             }
     }
 

@@ -17,6 +17,8 @@ public final class FakeTaskRepository: TaskRepository {
     private struct State {
         var calls: [Call] = []
         var failure: RepositoryError?
+        var heldCalls: AsyncStream<Void>?
+        var heldCallsContinuation: AsyncStream<Void>.Continuation?
         var taskBroadcasters: [TaskID: StreamBroadcaster<DeliveryTask?>] = [:]
     }
 
@@ -54,27 +56,27 @@ public final class FakeTaskRepository: TaskRepository {
     }
 
     public func startDelivery(id: TaskID) async throws(RepositoryError) {
-        try record(.startDelivery(id))
+        try await record(.startDelivery(id))
     }
 
     public func markDelivered(id: TaskID) async throws(RepositoryError) {
-        try record(.markDelivered(id))
+        try await record(.markDelivered(id))
     }
 
     public func undoDelivery(id: TaskID) async throws(RepositoryError) {
-        try record(.undoDelivery(id))
+        try await record(.undoDelivery(id))
     }
 
     public func commitDelivery(id: TaskID) async throws(RepositoryError) {
-        try record(.commitDelivery(id))
+        try await record(.commitDelivery(id))
     }
 
     public func reportException(id: TaskID, reason: ExceptionReason) async throws(RepositoryError) {
-        try record(.reportException(id, reason))
+        try await record(.reportException(id, reason))
     }
 
     public func reorderQueue(orderedTaskIDs: [TaskID]) async throws(RepositoryError) {
-        try record(.reorderQueue(orderedTaskIDs))
+        try await record(.reorderQueue(orderedTaskIDs))
     }
 
     private func broadcaster(for id: TaskID) -> StreamBroadcaster<DeliveryTask?> {
@@ -88,10 +90,32 @@ public final class FakeTaskRepository: TaskRepository {
         }
     }
 
-    private func record(_ call: Call) throws(RepositoryError) {
-        let failure = state.withLock { state -> RepositoryError? in
+    public func holdCalls() {
+        let (stream, continuation) = AsyncStream.makeStream(of: Void.self)
+        state.withLock {
+            $0.heldCalls = stream
+            $0.heldCallsContinuation = continuation
+        }
+    }
+
+    public func releaseCalls() {
+        let continuation = state.withLock { state -> AsyncStream<Void>.Continuation? in
+            defer {
+                state.heldCalls = nil
+                state.heldCallsContinuation = nil
+            }
+            return state.heldCallsContinuation
+        }
+        continuation?.finish()
+    }
+
+    private func record(_ call: Call) async throws(RepositoryError) {
+        let (failure, heldCalls) = state.withLock { state -> (RepositoryError?, AsyncStream<Void>?) in
             state.calls.append(call)
-            return state.failure
+            return (state.failure, state.heldCalls)
+        }
+        if let heldCalls {
+            for await _ in heldCalls {}
         }
         if let failure {
             throw failure

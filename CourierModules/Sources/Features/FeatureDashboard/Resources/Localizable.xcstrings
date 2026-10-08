@@ -23,6 +23,39 @@
         }
       }
     },
+    "dashboard.alert.shiftHasTaskInTransit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish the delivery in progress before ending the shift."
+          }
+        }
+      }
+    },
+    "dashboard.alert.shiftNotActive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The shift isn't active."
+          }
+        }
+      }
+    },
+    "dashboard.alert.taskNotInActiveShift": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This delivery doesn't belong to the active shift."
+          }
+        }
+      }
+    },
     "dashboard.alert.title": {
       "extractionState": "manual",
       "localizations": {

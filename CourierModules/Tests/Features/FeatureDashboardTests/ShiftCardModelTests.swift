@@ -87,4 +87,29 @@ struct ShiftCardModelTests {
 
         #expect(await eventually { shiftRepository.summary.activeObserverCount == 0 })
     }
+
+    @Test func concurrentActionIsIgnoredWithoutFailure() async {
+        let model = makeModel()
+        shiftRepository.holdCalls()
+        let first = Task { await model.startShift() }
+        #expect(await eventually { shiftRepository.calls.count == 1 })
+        #expect(model.isPerformingAction)
+
+        await model.startShift()
+        await model.endShift()
+
+        #expect(shiftRepository.calls == [.startShift])
+        #expect(model.actionFailure == nil)
+
+        shiftRepository.releaseCalls()
+        await first.value
+        #expect(!model.isPerformingAction)
+    }
+
+    @Test func alertMessagesAreSpecificForKnownErrorsAndGenericOtherwise() {
+        #expect(RepositoryError.shiftHasTaskInTransit.alertMessage == .dashboardAlertShiftHasTaskInTransit)
+        #expect(RepositoryError.shiftNotActive.alertMessage == .dashboardAlertShiftNotActive)
+        #expect(RepositoryError.taskNotInActiveShift.alertMessage == .dashboardAlertTaskNotInActiveShift)
+        #expect(RepositoryError.storageFailure("disk").alertMessage == .dashboardAlertMessage)
+    }
 }

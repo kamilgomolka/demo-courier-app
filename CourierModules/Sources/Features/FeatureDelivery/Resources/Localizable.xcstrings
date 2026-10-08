@@ -1,6 +1,17 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "delivery.alert.anotherTaskInTransit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another delivery is already in progress."
+          }
+        }
+      }
+    },
     "delivery.alert.dismissButton": {
       "extractionState": "manual",
       "localizations": {
@@ -8,6 +19,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "delivery.alert.exceptionDetailsRequired": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Describe the problem before saving."
+          }
+        }
+      }
+    },
+    "delivery.alert.invalidTransition": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action isn't available in the delivery's current state."
           }
         }
       }
@@ -23,6 +56,17 @@
         }
       }
     },
+    "delivery.alert.taskNotInActiveShift": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This delivery doesn't belong to the active shift."
+          }
+        }
+      }
+    },
     "delivery.alert.title": {
       "extractionState": "manual",
       "localizations": {
@@ -30,6 +74,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Something went wrong"
+          }
+        }
+      }
+    },
+    "delivery.alert.undoWindowClosed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The undo window has closed."
           }
         }
       }

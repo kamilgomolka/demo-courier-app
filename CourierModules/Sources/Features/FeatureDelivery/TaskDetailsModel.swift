@@ -6,12 +6,14 @@ import Observation
 final class TaskDetailsModel {
     private(set) var task: DeliveryTask?
     private(set) var failure: RepositoryError?
+    private(set) var isPerformingAction = false
 
     @ObservationIgnored private let taskID: TaskID
     @ObservationIgnored private let taskRepository: any TaskRepository
     @ObservationIgnored private let timeSource: any TimeSource
     @ObservationIgnored private let onFinish: () -> Void
     @ObservationIgnored private var isFinished = false
+    @ObservationIgnored private var hasLoadedTask = false
 
     init(
         taskID: TaskID,
@@ -34,6 +36,11 @@ final class TaskDetailsModel {
         for await updatedTask in taskRepository.observeTask(id: taskID) {
             if task != updatedTask {
                 task = updatedTask
+            }
+            if updatedTask != nil {
+                hasLoadedTask = true
+            } else if hasLoadedTask {
+                finish()
             }
         }
     }
@@ -96,6 +103,9 @@ final class TaskDetailsModel {
 
     @discardableResult
     private func perform(_ action: () async throws(RepositoryError) -> Void) async -> Bool {
+        guard !isPerformingAction else { return false }
+        isPerformingAction = true
+        defer { isPerformingAction = false }
         do {
             try await action()
             return true

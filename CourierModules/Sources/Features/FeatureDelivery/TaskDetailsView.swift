@@ -41,7 +41,7 @@ public struct TaskDetailsView: View {
             ) {
                 Button(String(localized: .deliveryAlertDismissButton)) {}
             } message: {
-                Text(.deliveryAlertMessage)
+                Text(model.failure?.alertMessage ?? .deliveryAlertMessage)
             }
     }
 
@@ -84,11 +84,13 @@ public struct TaskDetailsView: View {
             PrimaryButton(.deliveryDetailsStartButton) {
                 Task { await model.startDelivery() }
             }
+            .disabled(model.isPerformingAction)
             .accessibilityIdentifier(DeliveryAccessibility.startButton)
         case .inTransit:
             PrimaryButton(.deliveryDetailsMarkDeliveredButton, role: .success) {
                 Task { await model.markDelivered() }
             }
+            .disabled(model.isPerformingAction)
             .accessibilityIdentifier(DeliveryAccessibility.markDeliveredButton)
             PrimaryButton(.deliveryDetailsReportExceptionButton, role: .destructive) {
                 isExceptionSheetPresented = true
@@ -120,11 +122,13 @@ public struct TaskDetailsView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
+            .disabled(model.isPerformingAction)
             .accessibilityIdentifier(DeliveryAccessibility.undoButton)
         }
         PrimaryButton(.deliveryDetailsDoneButton) {
             Task { await model.completeDelivery() }
         }
+        .disabled(model.isPerformingAction)
         .accessibilityIdentifier(DeliveryAccessibility.doneButton)
     }
 }

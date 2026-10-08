@@ -37,12 +37,13 @@ struct ShiftCardView: View {
             PrimaryButton(.dashboardShiftCardStartButton) {
                 Task { await model.startShift() }
             }
+            .disabled(model.isPerformingAction)
             .accessibilityIdentifier(DashboardAccessibility.startShiftButton)
         case .active:
             PrimaryButton(.dashboardShiftCardEndButton, role: .destructive) {
                 Task { await model.endShift() }
             }
-            .disabled(summary.hasTaskInTransit)
+            .disabled(summary.hasTaskInTransit || model.isPerformingAction)
             .accessibilityIdentifier(DashboardAccessibility.endShiftButton)
             if summary.hasTaskInTransit {
                 Text(.dashboardShiftCardEndBlockedMessage)
