@@ -1,6 +1,6 @@
 # CourierApp: plan implementacji
 
-Status: Fazy 0 do 8 zaimplementowane. Bramka (`make lint`, `make build`, `make test`) zielona na Xcode 26.6, iPhone 17 Pro, iOS 26.5. Niezweryfikowane: wygląd UI, płynność drag and drop, ścieżka Xcode na runnerze CI.
+Status: Fazy 0 do 8 zaimplementowane, poza ręczną listą kontrolną E2E z Fazy 8. Bramka (`make lint`, `make build`, `make test`) zielona na Xcode 26.6, iPhone 17 Pro, iOS 26.5. Niezweryfikowane: wygląd UI, płynność drag and drop, ścieżka Xcode na runnerze CI.
 
 Środowisko: Xcode 26.6 (Swift 6.3.3), iPhone 17 Pro, iOS 26.5. Komendy buildowe uruchamiane z `DEVELOPER_DIR=/Applications/Xcode_26_6.app/Contents/Developer`, bo `xcode-select` już raz przeskoczył na 27.1.
 
@@ -36,7 +36,7 @@ Wszystkie odwracalne. Do korekty na review.
 - Wygaśnięcie okna Undo: job staje się kwalifikowalny sam (wybudzenie w `SyncActor`), ekran szczegółów zamyka się automatycznie (pop). `Done` jawnie wywołuje `commitDelivery` (przyspiesza `notBefore` do `now`). `onDisappear` (swipe back, zmiana taba) to wyłącznie fallback. `commitDelivery` jest idempotentny: działa tylko dla zadania `delivered` z aktywnym oknem, w pozostałych stanach to bezpieczny no-op.
 - Progress na karcie zmiany: `(delivered + exception) / wszystkie zadania zmiany`. Earnings: suma `payout` zadań `delivered` w zmianie (bez `exception`).
 - `Shift`: `scheduled → active → finished`, `finished` jest stanem końcowym. "End Shift" zablokowany, gdy istnieje zadanie `inTransit` (przycisk disabled plus komunikat przy przycisku). Powrót do stanu początkowego tylko przez reset danych w Settings. Zmiana jest lokalna i nie generuje `SyncJob`.
-- Inwarianty zmiany egzekwuje `LocalStore`, nie UI: `startDelivery` i `reorderQueue` wymagają aktywnej zmiany i zadania należącego do niej (`shiftNotActive`, `taskNotInActiveShift`). `startShift` tylko ze `scheduled`, `endShift` tylko z `active` (`invalidShiftTransition`).
+- Inwarianty zmiany egzekwuje `LocalStore`, nie UI: `startDelivery`, `undoDelivery` i `reorderQueue` wymagają aktywnej zmiany i zadania należącego do niej (`shiftNotActive`, `taskNotInActiveShift`). Po zakończeniu zmiany Undo jest więc odrzucane, nawet w oknie Undo. `startShift` tylko ze `scheduled`, `endShift` tylko z `active` (`invalidShiftTransition`).
 - Dozwolone przejścia zadania: `new → inTransit`, `inTransit → delivered | exception`, `delivered → inTransit` (wyłącznie Undo w oknie). Reszta zabroniona (`invalidTransition`). Drugi `inTransit` zabroniony (`anotherTaskInTransit`).
 - Powody wyjątku: Customer No-Show, Address Not Found, Package Damaged, Other (wymaga niepustego tekstu).
 - Mock serwera: `GET /tasks` (zmiana plus zadania), `PATCH /tasks/{id}/status`, `PATCH /route-optimization`. Opóźnienie losowe z zakresu ustawianego w Settings (domyślnie 1 do 3 s). Błędy symulowane: timeout, utrata połączenia, 500, 503, 429.
@@ -74,16 +74,16 @@ flowchart TD
     CourierAppHost --> AppNavigation
 ```
 
-`AppNavigation` (pakiet) jest Composition Root: jako jedyny widzi `LocalStorage` i `SyncEngine` i wstrzykuje je do feature'ów przez inicjalizatory. Host tworzy tylko kontener SwiftData i przekazuje go do `AppNavigation`. Moduły `Feature*` zależą wyłącznie od `Domain` i `DesignSystem`. `AppNavigation` zależy też bezpośrednio od `Domain` i `DesignSystem` (pominięte na diagramie). `SyncEngineTests` zależą dodatkowo od `LocalStorage` (testy integracyjne). `DomainTestSupport` jest produktem używanym wyłącznie przez targety testowe.
+`AppNavigation` (pakiet) jest Composition Root: jako jedyny widzi `LocalStorage` i `SyncEngine` i wstrzykuje je do feature'ów przez inicjalizatory. Kontener SwiftData tworzy `AppNavigation` (`AppEnvironment.makeLive()`, leniwie w `.task` w `RootView`), a host osadza tylko `RootView`. Moduły `Feature*` zależą wyłącznie od `Domain` i `DesignSystem`. `AppNavigation` zależy też bezpośrednio od `Domain` i `DesignSystem` (pominięte na diagramie). `SyncEngineTests` zależą dodatkowo od `LocalStorage` (testy integracyjne). `DomainTestSupport` jest produktem używanym wyłącznie przez targety testowe.
 
 ### 4.2 Struktura katalogów
 
 ```
 demo-courier-v2/
 ├── CourierApp.xcodeproj
-├── CourierApp.xctestplan                 # UI testy + testy targetów SPM
+├── CourierApp.xctestplan                 # UI testy hosta
 ├── CourierApp/                           # host aplikacji
-│   ├── Source/Application/App.swift      # @main, tworzy kontener SwiftData i wpina AppNavigation
+│   ├── Source/Application/App.swift      # @main, osadza RootView z AppNavigation
 │   └── SupportingFiles/                  # Info.plist, xcassets (AppIcon)
 ├── CourierAppUITests/                    # UI testy E2E (XCTest)
 ├── Config/                               # xcconfig (strictness, platform)
@@ -135,7 +135,6 @@ Jeden `CourierModules/Package.swift`, wspólny blok `swiftSettings` dla każdego
 
 ```swift
 let strictSettings: [SwiftSetting] = [
-    .treatAllWarnings(as: .error),
     .strictMemorySafety(),
     .enableUpcomingFeature("ExistentialAny"),
     .enableUpcomingFeature("InternalImportsByDefault"),
@@ -150,9 +149,11 @@ let strictSettings: [SwiftSetting] = [
 
 `.defaultIsolation(MainActor.self)` dochodzi tylko w modułach UI. Wszystkie te API istnieją w Xcode 26.6 (zweryfikowane w `PackageDescription.swiftinterface`). Jeden manifest eliminuje duplikację polityki.
 
+Warnings-as-errors dla pakietu nie jest w `Package.swift`: `.treatAllWarnings(as: .error)` koliduje z `-suppress-warnings` przy budowaniu pakietu z hosta (spike 4). Zastępują je flagi `SWIFT_SUPPRESS_WARNINGS=NO SWIFT_TREAT_WARNINGS_AS_ERRORS=YES` (`STRICT_WARNINGS` w `Makefile`) przy każdym `xcodebuild`.
+
 `.swift-format`: `NeverForceUnwrap` i `NeverUseForceTry` przełączone na `true`. Jeśli lint zaczyna krzyczeć na testy, używamy `try #require`.
 
-CI (`ci.yml`): jawnie ustawiony `DEVELOPER_DIR` na Xcode 26.6 (ścieżka zgodna z obrazem runnera), krok z `xcodebuild -version` i `xcrun simctl list runtimes`, który kończy się błędem przy innej wersji Xcode. `OS=latest` na runnerze, lokalnie `OS=26.5`.
+CI (`ci.yml`): jawnie ustawiony `DEVELOPER_DIR` na Xcode 26.6 (ścieżka zgodna z obrazem runnera), krok z `xcodebuild -version` i `xcrun simctl list runtimes`, który kończy się błędem przy innej wersji Xcode. `OS=latest` na runnerze, lokalnie `OS=26.5`. Job `lint` ma ten sam `DEVELOPER_DIR` i sprawdza, że `swift-format` jest w wersji 6.3.
 
 ### 4.4 Model danych (Domain, czyste typy `Sendable`)
 
@@ -167,7 +168,7 @@ CI (`ci.yml`): jawnie ustawiony `DEVELOPER_DIR` na Xcode 26.6 (ścieżka zgodna 
 - `NetworkConditions`: `isOffline`, `latencyRange`, `simulatedFailure`.
 - `SyncPolicy`: `undoWindow = 5 s`, `reorderDebounce = 5 s`.
 - `SyncTrigger`: `launch`, `foreground`, `screenAppeared`, `connectivityRestored`, `manual`. Do tego wewnętrzne w `SyncActor`: `jobsChanged`, `wake`.
-- Błędy (typed throws): `RepositoryError` (`invalidTransition`, `anotherTaskInTransit`, `taskNotFound`, `undoWindowClosed`, `exceptionDetailsRequired`, `shiftHasTaskInTransit`, `shiftNotActive`, `taskNotInActiveShift`, `invalidShiftTransition`, `storageFailure`), `SyncError` (`offline`, `timedOut`, `connectionLost`, `server(status)`, `decodingFailed`).
+- Błędy (typed throws): `RepositoryError` (`invalidTransition`, `anotherTaskInTransit`, `taskNotFound`, `undoWindowClosed`, `exceptionDetailsRequired`, `shiftHasTaskInTransit`, `shiftNotActive`, `taskNotInActiveShift`, `invalidShiftTransition`, `storageFailure`), `SyncError` (`offline`, `timedOut`, `connectionLost`, `server(status)`, `decodingFailed`, `cancelled`, `storageFailure(message)`).
 - Maszyna stanów: czysta funkcja `TaskStateMachine.apply(event, to: task)` z `TaskEvent`: `startDelivery`, `markDelivered(at)`, `undoDelivery`, `reportException(reason, at)`. Niezmienniki wymagające kontekstu (jeden `inTransit`, aktywna zmiana, przynależność do zmiany) sprawdza `LocalStore` w tej samej transakcji.
 
 Protokoły (wszystkie `Sendable`). To szkice. Sygnatury są zamrożone dopiero po pierwszej pełnej integracji `LocalStorage` plus `SyncEngine` plus feature'a (koniec Fazy 4b), nie wcześniej:
@@ -188,7 +189,7 @@ Protokoły (wszystkie `Sendable`). To szkice. Sygnatury są zamrożone dopiero p
 - **Obserwacja bez `@Query`:** po każdym udanym `save()` `LocalStore` przelicza aktywne strumienie i wypycha snapshot do `AsyncStream` (`bufferingNewest(1)`), tylko gdy różni się od poprzedniego (`Equatable`).
 - **Lifecycle strumienia:** `onTermination` usuwa continuation z rejestru aktora. Modele UI anulują task konsumujący strumień przy zniknięciu widoku (`.task` albo jawne `stop()`). Test: po zakończeniu konsumenta liczba aktywnych obserwatorów wraca do zera (internal hook diagnostyczny).
 - **Brak problemów z merge'em kontekstów:** wszystko dzieje się w jednym `ModelContext`.
-- `LocalStorage.makeContainer(isStoredInMemoryOnly:)` oraz wariant z URL (testy trwałości) są publiczne. Host tworzy kontener i przekazuje go do `AppNavigation`.
+- `CourierStorage.makeContainer(isStoredInMemoryOnly:)` oraz wariant z URL (testy trwałości) są publiczne. Kontener tworzy `AppEnvironment` w `AppNavigation`.
 - `UserDefaultsNetworkConditionsStore` przyjmuje `UserDefaults` i prefiks kluczy. Testy używają osobnego suite'a i czyszczą go w teardown.
 
 ### 4.6 Sync (SyncEngine)
@@ -196,10 +197,12 @@ Protokoły (wszystkie `Sendable`). To szkice. Sygnatury są zamrożone dopiero p
 `SyncActor` jest jedynym konsumentem outboxu. Subskrybuje `observeJobs()`.
 
 - **Kwalifikowalność jobu** wynika z zegara: `job.notBefore <= now`.
-- **Wybudzanie:** `SyncActor` utrzymuje jedno anulowalne zadanie `wakeTask` uśpione do najwcześniejszego `notBefore` spośród jobów jeszcze niekwalifikowalnych. Każda istotna zmiana kolejki anuluje je i przelicza termin. Po terminie wykonywany jest drain. Dzięki temu dodanie jobu z oknem 5 s zawsze kończy się wysłaniem, bez udziału UI.
+- **Wybudzanie:** `SyncActor` utrzymuje jedno anulowalne zadanie `wakeTask` uśpione do najwcześniejszego `notBefore` spośród jobów jeszcze niekwalifikowalnych. Każda istotna zmiana kolejki anuluje je i przelicza termin, a licznik generacji (`wakeGeneration`) sprawia, że wybudzenie z nieaktualnego terminu jest ignorowane. Po terminie wykonywany jest drain. Dzięki temu dodanie jobu z oknem 5 s zawsze kończy się wysłaniem, bez udziału UI.
 - **Fingerprint schedulera:** zmiana kolejki uruchamia przeliczenie i drain tylko, gdy zmienił się zbiór trójek (`id`, `kind`, `notBefore`). `attemptCount` i `lastFailure` nie wchodzą do fingerprintu, więc zapis diagnostyki błędu nie wyzwala kolejnej próby. Pełny snapshot (z próbami i błędami) nadal trafia do debuggera w Settings osobnym strumieniem.
 - **Triggery zewnętrzne** (każdy robi jeden drain): `launch`, `foreground`, `screenAppeared`, `connectivityRestored`, `manual` ("Sync now"). Bez background fetch.
-- **Drain:** pobierz kwalifikujące się joby (FIFO po `createdAt`), wyślij każdy co najwyżej raz → sukces: transakcja usuwa job → błąd: `attemptCount += 1`, `lastFailure`, cykl się kończy. Brak sieci przerywa cykl przy pierwszym jobie. Nakładające się żądania drain są łączone w jeden cykl (flaga "rerun needed").
+- **Drain:** pobierz kwalifikujące się joby (FIFO po `createdAt`), wyślij każdy co najwyżej raz → sukces: transakcja usuwa job → błąd: `attemptCount += 1`, `lastFailure`. Nieudany job blokuje do końca cyklu kolejne joby tego samego `taskID` (zachowanie kolejności zmian statusu zadania), ale nie joby innych zadań. Brak sieci (`offline`) i anulowanie przerywają cały cykl. Nakładające się żądania drain są łączone w jeden cykl (flaga "rerun needed").
+- **Ponawianie nieudanych jobów** (`attemptCount > 0`) wyłącznie przez triggery zewnętrzne (`requestSync`). Drain wywołany zmianą kolejki lub wybudzeniem je pomija i blokuje kolejne joby tego samego `taskID`.
+- **Nieczytelne rekordy outboxu** (nie da się zdekodować `SyncJobKind`) są pomijane i logowane. Nie blokują zapytań ani drainu.
 - **At-least-once:** po sukcesie serwera i ubiciu procesu przed lokalnym usunięciem jobu request zostanie powtórzony. To poprawne zachowanie: `SyncJob.id` idzie jako `Idempotency-Key`, a PATCH-e są absolutne. Przy podmianie jobu `reorder` nowy payload dostaje nowe `id`.
 - **Cancellation:** `MockCourierAPI`, wszystkie sleepy i cały drain honorują anulowanie. Anulowany cykl nie zapisuje błędu. `markSynced` dla nieistniejącego jobu jest no-op.
 - **Reset danych jest operacją kompozycyjną** (`SyncControlling.resetLocalData()`): anuluj i awaituj `wakeTask`, aktywny drain oraz ładowanie początkowe → `LocalDataResetting.resetAllData()` → uruchom ponownie subskrypcję i wykonaj `loadInitialData()`. Stary request nie może wrócić po resecie i zmodyfikować świeżej bazy.
@@ -289,17 +292,17 @@ Model: **hybrydowy.** Fazy 1 do 3 są poziome (kontrakty i warstwy danych są ws
 
 Repozytorium startowe jest kopią szablonu mono-repo (monolityczny host). Faza 0 przenosi je do architektury z 4.1 do 4.3.
 
-- [ ] `Config/`: polityka strictness z 4.3, `TARGETED_DEVICE_FAMILY = 1`, orientacja portret, poprawka nieprawdziwego opisu "warnings-as-errors" i Run Script w README.
-- [ ] `pbxproj`: usunięty Run Script `make format`.
-- [ ] `.swift-format`: `NeverForceUnwrap` i `NeverUseForceTry` na `true`.
-- [ ] `Makefile`: `OS ?= 26.5`, `SWIFT_SOURCES` rozszerzone o `CourierModules`.
-- [ ] `ci.yml`: `DEVELOPER_DIR`, wydruk wersji Xcode i runtime'ów, `OS=latest`.
-- [ ] **Sprzątanie monolitu:** usunięcie z projektu `MainView.swift`, `SampleFeatureView.swift`, nieużywanych katalogów w `CourierApp/Source/`, nieużywanego `Localizable.xcstrings` hosta oraz `MainViewTests.swift` (testy przechodzą do pakietu, target `CourierAppTests` znika).
-- [ ] **Inicjalizacja SPM:** `CourierModules/Package.swift` z 10 targetami źródłowymi (`Sources`, w tym `DomainTestSupport`) i odpowiadającymi targetami testowymi (`Tests`). `strictSettings` na każdym targecie, `defaultIsolation(MainActor)` w modułach UI. Po jednym pustym pliku źródłowym na target.
-- [ ] **Integracja w Xcode:** `CourierModules` jako Local Package w `CourierApp.xcodeproj` (`XCLocalSwiftPackageReference`). W *Frameworks, Libraries, and Embedded Content* hosta tylko biblioteka `AppNavigation`.
-- [ ] **AppNavigation placeholder:** pusty `RootView.swift` importujący wszystkie moduły `Feature*` (dowód, że graf się buduje). `App.swift` inicjalizuje `RootView`.
-- [ ] **Testy:** wszystkie targety testowe SPM w `CourierApp.xctestplan` (`containerPath: "container:CourierModules"`). `CourierAppUITests` sprawdza widoczność `RootView`.
-- [ ] **Spike'i (kanarki, tymczasowe, usuwane przed końcem fazy), wynik zapisany w sekcji 7:**
+- [x] `Config/`: polityka strictness z 4.3, `TARGETED_DEVICE_FAMILY = 1`, orientacja portret, poprawka nieprawdziwego opisu "warnings-as-errors" i Run Script w README.
+- [x] `pbxproj`: usunięty Run Script `make format`.
+- [x] `.swift-format`: `NeverForceUnwrap` i `NeverUseForceTry` na `true`.
+- [x] `Makefile`: `OS ?= 26.5`, `SWIFT_SOURCES` rozszerzone o `CourierModules`.
+- [x] `ci.yml`: `DEVELOPER_DIR`, wydruk wersji Xcode i runtime'ów, `OS=latest`.
+- [x] **Sprzątanie monolitu:** usunięcie z projektu `MainView.swift`, `SampleFeatureView.swift`, nieużywanych katalogów w `CourierApp/Source/`, nieużywanego `Localizable.xcstrings` hosta oraz `MainViewTests.swift` (testy przechodzą do pakietu, target `CourierAppTests` znika).
+- [x] **Inicjalizacja SPM:** `CourierModules/Package.swift` z 10 targetami źródłowymi (`Sources`, w tym `DomainTestSupport`) i odpowiadającymi targetami testowymi (`Tests`). `strictSettings` na każdym targecie, `defaultIsolation(MainActor)` w modułach UI. Po jednym pustym pliku źródłowym na target.
+- [x] **Integracja w Xcode:** `CourierModules` jako Local Package w `CourierApp.xcodeproj` (`XCLocalSwiftPackageReference`). W *Frameworks, Libraries, and Embedded Content* hosta tylko biblioteka `AppNavigation`.
+- [x] **AppNavigation placeholder:** pusty `RootView.swift` importujący wszystkie moduły `Feature*` (dowód, że graf się buduje). `App.swift` inicjalizuje `RootView`.
+- [x] **Testy:** `CourierAppUITests` w `CourierApp.xctestplan`. Testy targetów SPM uruchamia `make test-package` (spike 4).
+- [x] **Spike'i (kanarki, tymczasowe, usuwane przed końcem fazy), wynik zapisany w sekcji 7:**
   1. `@Model` + `@ModelActor` w `LocalStorage` przy pełnym zestawie strictness (w tym strict memory safety i warnings-as-errors).
   2. Wygenerowane symbole z String Catalog w `FeatureDashboard` (`String(localized: .klucz)`).
   3. Wygenerowane symbole kolorów z `Colors.xcassets` w `DesignSystem`, w tym wariant Dark.
@@ -308,25 +311,25 @@ Repozytorium startowe jest kopią szablonu mono-repo (monolityczny host). Faza 0
 
 ### Faza 1: Domain (poziomo)
 
-- [ ] `Domain`: modele, enumy, błędy, `SyncPolicy`, `TaskStateMachine`, `ShiftSummary`, protokoły z 4.4 (wersja robocza). Target `DomainTestSupport` (fixtury plus fake'i repozytoriów, `DomainMocks`) z Fazy 0 dostaje zawartość.
-- [ ] Testy: tabela przejść maszyny stanów (każdy stan razy każde zdarzenie), `ShiftSummary` (earnings, progress, brak zadań), round-trip `SyncJobKind`.
+- [x] `Domain`: modele, enumy, błędy, `SyncPolicy`, `TaskStateMachine`, `ShiftSummary`, protokoły z 4.4 (wersja robocza). Target `DomainTestSupport` (fixtury plus fake'i repozytoriów, `DomainMocks`) z Fazy 0 dostaje zawartość.
+- [x] Testy: tabela przejść maszyny stanów (każdy stan razy każde zdarzenie), `ShiftSummary` (earnings, progress, brak zadań), round-trip `SyncJobKind`.
 - Wyjście: kontrakty do review jako wersja robocza.
 
 ### Faza 2: LocalStorage (poziomo)
 
-- [ ] Schemat `VersionedSchema` v1, rekordy `@Model`, mappery rekord ↔ domena (z derywacją `syncState`).
-- [ ] `LocalStore`: wszystkie mutacje z inwariantami (w tym zmiany i przynależność do zmiany), outbox w jednej transakcji, korekta oczekującego `reorder` przy zmianie składu kolejki, idempotentny `commitDelivery`, strumienie z deduplikacją i sprzątaniem, `mergeRemoteSnapshot` (insert-only), `resetAllData`.
-- [ ] `LocalStorage.makeContainer` (in-memory i z URL), `UserDefaultsNetworkConditionsStore`.
-- [ ] Logger `storage`.
-- [ ] Testy in-memory: przejścia plus atomowe tworzenie jobów, odmowa drugiego `inTransit`, odmowa `startDelivery` i `reorderQueue` bez aktywnej zmiany lub dla zadania spoza niej, `invalidShiftTransition`, Undo w oknie i po `commitDelivery`, `commitDelivery` jako no-op w pozostałych stanach, coalescing reorderu, reorder → start delivery daje payload tylko z aktualnymi `new`, derywowany `syncState`, strumienie (emisja początkowa, brak emisji bez zmiany, odsubskrybowanie), metryki zmiany, `UserDefaultsNetworkConditionsStore` na osobnym suite.
-- [ ] **Testy trwałości na dysku** (tymczasowy plik store'u, sprzątany po teście): zapis jobu → zniszczenie `LocalStore` → ponowne otwarcie, restart w trakcie okna Undo (job dalej wstrzymany, Undo działa), restart z przeterminowanym jobem (job kwalifikowalny).
+- [x] Schemat `VersionedSchema` v1, rekordy `@Model`, mappery rekord ↔ domena (z derywacją `syncState`).
+- [x] `LocalStore`: wszystkie mutacje z inwariantami (w tym zmiany i przynależność do zmiany), outbox w jednej transakcji, korekta oczekującego `reorder` przy zmianie składu kolejki, idempotentny `commitDelivery`, strumienie z deduplikacją i sprzątaniem, `mergeRemoteSnapshot` (insert-only), `resetAllData`.
+- [x] `LocalStorage.makeContainer` (in-memory i z URL), `UserDefaultsNetworkConditionsStore`.
+- [x] Logger `storage`.
+- [x] Testy in-memory: przejścia plus atomowe tworzenie jobów, odmowa drugiego `inTransit`, odmowa `startDelivery` i `reorderQueue` bez aktywnej zmiany lub dla zadania spoza niej, `invalidShiftTransition`, Undo w oknie i po `commitDelivery`, `commitDelivery` jako no-op w pozostałych stanach, coalescing reorderu, reorder → start delivery daje payload tylko z aktualnymi `new`, derywowany `syncState`, strumienie (emisja początkowa, brak emisji bez zmiany, odsubskrybowanie), metryki zmiany, `UserDefaultsNetworkConditionsStore` na osobnym suite.
+- [x] **Testy trwałości na dysku** (tymczasowy plik store'u, sprzątany po teście): zapis jobu → zniszczenie `LocalStore` → ponowne otwarcie, restart w trakcie okna Undo (job dalej wstrzymany, Undo działa), restart z przeterminowanym jobem (job kwalifikowalny).
 
 ### Faza 3: SyncEngine (poziomo, headless)
 
-- [ ] `MockCourierAPI` plus `Resources/MockData/courier-snapshot.json` (1 zmiana `scheduled`, 12 zadań ze `shiftID`), `Idempotency-Key`, cancellation, wstrzykiwany `Clock` i provider opóźnienia.
-- [ ] `SyncActor`: subskrypcja `observeJobs()` z fingerprintem schedulera, `wakeTask`, triggery zewnętrzne, `loadInitialData`, `resetLocalData`, łączenie nakładających się cykli.
-- [ ] Loggery `sync` i `network`.
-- [ ] Testy z wstrzykiwanym `Clock`, `now` i stałym opóźnieniem:
+- [x] `MockCourierAPI` plus `Resources/MockData/courier-snapshot.json` (1 zmiana `scheduled`, 12 zadań ze `shiftID`), `Idempotency-Key`, cancellation, wstrzykiwany `Clock` i provider opóźnienia.
+- [x] `SyncActor`: subskrypcja `observeJobs()` z fingerprintem schedulera, `wakeTask`, triggery zewnętrzne, `loadInitialData`, `resetLocalData`, łączenie nakładających się cykli.
+- [x] Loggery `sync` i `network`.
+- [x] Testy z wstrzykiwanym `Clock`, `now` i stałym opóźnieniem:
   - brak requestu przed `notBefore`, dokładnie jeden po terminie,
   - zmiana kolejki (Undo, podmiana reorderu) przelicza lub anuluje wybudzenie,
   - FIFO i każdy job najwyżej raz na drain,
@@ -336,7 +339,7 @@ Repozytorium startowe jest kopią szablonu mono-repo (monolityczny host). Faza 0
   - sukces usuwa job,
   - `loadInitialData` wstawia dane, jest idempotentne,
   - integracja z prawdziwym `LocalStore`.
-- [ ] **Testy trwałości i odporności (store na dysku):**
+- [x] **Testy trwałości i odporności (store na dysku):**
   - wysłanie przeterminowanego jobu po ponownym uruchomieniu `LocalStore` i `SyncActor`,
   - replay po symulowanym crashu przed lokalnym ACK: ten sam `SyncJob.id` wysłany ponownie, serwer akceptuje duplikat,
   - reset podczas requestu w locie: stary request nie modyfikuje świeżej bazy, worker startuje ponownie.
@@ -344,44 +347,44 @@ Repozytorium startowe jest kopią szablonu mono-repo (monolityczny host). Faza 0
 
 ### Faza 4a: Dashboard i szkielet nawigacji (pionowo)
 
-- [ ] `DesignSystem`: `Colors.xcassets` z potrzebnymi tokenami, typografia, `PrimaryButton`, `EmptyStateView`, test rozwiązywania tokenów (light i dark).
-- [ ] `AppNavigation`: `AppEnvironment` (kompozycja: kontener, `LocalStore`, `SyncActor`, `MockCourierAPI`, store ustawień), `RootView`, trzy `NavigationStack`, router, placeholdery History i Settings, triggery `launch` i `foreground` (`scenePhase`).
-- [ ] `App.swift`: tworzenie kontenera i obsługa błędu inicjalizacji bez `try!`.
-- [ ] `FeatureDashboard` (plus jego `Localizable.xcstrings`): `ShiftCardModel` plus widok, `TaskQueueModel` plus lista, stany loading, error (retry), empty, wiersze `disabled` przy nieaktywnej zmianie, start i koniec zmiany z blokadą przy `inTransit`.
-- [ ] Testy modeli na fake'ach z `DomainTestSupport` (w tym anulowanie konsumenta strumienia).
+- [x] `DesignSystem`: `Colors.xcassets` z potrzebnymi tokenami, typografia, `PrimaryButton`, `EmptyStateView`, test rozwiązywania tokenów (light i dark).
+- [x] `AppNavigation`: `AppEnvironment` (kompozycja: kontener, `LocalStore`, `SyncActor`, `MockCourierAPI`, store ustawień), `RootView`, trzy `NavigationStack`, router, placeholdery History i Settings, triggery `launch` i `foreground` (`scenePhase`).
+- [x] `App.swift` osadza `RootView`. `RootView` tworzy `AppEnvironment` (z kontenerem) leniwie w `.task`, a błąd inicjalizacji pokazuje `EmptyStateView` (bez `try!`).
+- [x] `FeatureDashboard` (plus jego `Localizable.xcstrings`): `ShiftCardModel` plus widok, `TaskQueueModel` plus lista, stany loading, error (retry), empty, wiersze `disabled` przy nieaktywnej zmianie, start i koniec zmiany z blokadą przy `inTransit`.
+- [x] Testy modeli na fake'ach z `DomainTestSupport` (w tym anulowanie konsumenta strumienia).
 - Efekt: po starcie aplikacji dane ładują się z mocka (spinner), widać kartę zmiany i listę.
 
 ### Faza 4b: Delivery (pionowo)
 
-- [ ] `FeatureDelivery` (plus jego katalog stringów): `TaskDetailsModel`, widok (stany `new`, `inTransit`, `delivered` z paskiem Undo i Done), `ExceptionReportSheet` (4 radio, pole tekstowe dla `Other`, zapis zablokowany bez tekstu).
-- [ ] `DesignSystem`: warianty `success` i `destructive` przycisku.
-- [ ] `AppNavigation`: `navigationDestination`, auto-pop po wygaśnięciu paska, `Done` z jawnym `commitDelivery`, `onDisappear` jako fallback.
-- [ ] Testy: przejścia w miejscu bez popu, Undo w oknie, `Done` commituje, fallback jest no-op po Undo i commicie, walidacja `Other`.
-- [ ] Zamrożenie protokołów `Domain` po przeglądzie integracji.
+- [x] `FeatureDelivery` (plus jego katalog stringów): `TaskDetailsModel`, widok (stany `new`, `inTransit`, `delivered` z paskiem Undo i Done), `ExceptionReportSheet` (4 radio, pole tekstowe dla `Other`, zapis zablokowany bez tekstu).
+- [x] `DesignSystem`: warianty `success` i `destructive` przycisku.
+- [x] `AppNavigation`: `navigationDestination`, auto-pop po wygaśnięciu paska, `Done` z jawnym `commitDelivery`, `onDisappear` jako fallback.
+- [x] Testy: przejścia w miejscu bez popu, Undo w oknie, `Done` commituje, fallback jest no-op po Undo i commicie, walidacja `Other`.
+- [x] Zamrożenie protokołów `Domain` po przeglądzie integracji.
 - Efekt: pełna ścieżka `new → inTransit → delivered/exception` z kolejką sync widoczną w logach.
 
 ### Faza 5: Reorder (pionowo)
 
-- [ ] `FeatureDashboard`: `.onMove` plus `EditButton` (ukryty przy nieaktywnej zmianie), tylko sekcja `new`.
-- [ ] Brak timera w modelu UI: job reorder wstrzymany przez `notBefore`, wybudzenie w `SyncActor`.
-- [ ] Testy: kolejność po ruchu, coalescing jobu, brak sieci nie blokuje UI, kolejny ruch przesuwa termin, odrzucenie reorderu bez aktywnej zmiany.
+- [x] `FeatureDashboard`: `.onMove` plus `EditButton` (ukryty przy nieaktywnej zmianie), tylko sekcja `new`.
+- [x] Brak timera w modelu UI: job reorder wstrzymany przez `notBefore`, wybudzenie w `SyncActor`.
+- [x] Testy: kolejność po ruchu, coalescing jobu, brak sieci nie blokuje UI, kolejny ruch przesuwa termin, odrzucenie reorderu bez aktywnej zmiany.
 
 ### Faza 6: History (pionowo)
 
-- [ ] `FeatureHistory` (plus katalog stringów): `HistoryModel`, grupowanie po dniu, `StatusBadge` w `DesignSystem` (w tym "Pending sync"), powód wyjątku w podtytule.
-- [ ] Testy grupowania i sortowania, wyświetlanie powodu `Other`.
+- [x] `FeatureHistory` (plus katalog stringów): `HistoryModel`, grupowanie po dniu, `StatusBadge` w `DesignSystem` (w tym "Pending sync"), powód wyjątku w podtytule.
+- [x] Testy grupowania i sortowania, wyświetlanie powodu `Other`.
 
 ### Faza 7: Settings (pionowo)
 
-- [ ] `FeatureSettings` (plus katalog stringów): model, formularz symulacji sieci, reset danych (przez `SyncControlling.resetLocalData()`), lista jobów plus "Sync now".
-- [ ] Przełączenie offline na online wywołuje `requestSync(.connectivityRestored)`.
-- [ ] Testy modelu, zapis ustawień przez protokół.
+- [x] `FeatureSettings` (plus katalog stringów): model, formularz symulacji sieci, reset danych (przez `SyncControlling.resetLocalData()`), lista jobów plus "Sync now".
+- [x] Przełączenie offline na online wywołuje `requestSync(.connectivityRestored)`.
+- [x] Testy modelu, zapis ustawień przez protokół.
 
 ### Faza 8: Hardening
 
-- [ ] README: opis architektury, graf, decyzje i kompromisy, instrukcja uruchomienia, aktualne komendy.
-- [ ] UI smoke test: start, trzy taby, pełen flow `Start Delivery → Mark Delivered → Undo`.
-- [ ] Przegląd: zero warningów, zero `!`, `try!`, `as!`, brak komentarzy-narracji, brak nieużywanych importów i symboli, brak literałów w UI.
+- [x] README: opis architektury, graf, decyzje i kompromisy, instrukcja uruchomienia, aktualne komendy.
+- [x] UI smoke test: start, trzy taby, pełen flow `Start Delivery → Mark Delivered → Undo`.
+- [x] Przegląd: zero warningów, zero `!`, `try!`, `as!`, brak komentarzy-narracji, brak nieużywanych importów i symboli, brak literałów w UI.
 - [ ] Ręczna lista kontrolna E2E (offline, błędy, kill aplikacji w oknie Undo, reorder offline, reset podczas requestu).
 
 ## 6. Weryfikacja
