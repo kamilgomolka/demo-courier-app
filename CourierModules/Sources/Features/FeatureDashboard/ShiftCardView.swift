@@ -4,25 +4,26 @@ import SwiftUI
 
 struct ShiftCardView: View {
     let model: ShiftCardModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         if let summary = model.summary {
             VStack(alignment: .leading, spacing: 12) {
                 Text(statusTitle(for: summary.status))
                     .font(Typography.title)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Palette.textPrimary)
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
-                        Capsule().fill(.white.opacity(0.18))
+                        Capsule().fill(Palette.textSecondary.opacity(0.14))
                         Capsule()
-                            .fill(LinearGradient(colors: [.cyan, .white], startPoint: .leading, endPoint: .trailing))
+                            .fill(LinearGradient(colors: [Palette.accent, Color.cyan], startPoint: .leading, endPoint: .trailing))
                             .frame(width: geometry.size.width * min(max(summary.progress, 0), 1))
                     }
                 }
                 .frame(height: 8)
                 Text(.dashboardShiftCardProgress(summary.completedCount, summary.totalCount))
                     .font(Typography.body)
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(Palette.textSecondary)
                 HStack {
                     Text(.dashboardShiftCardEarnings)
                     Spacer()
@@ -31,19 +32,12 @@ struct ShiftCardView: View {
                         .contentTransition(.numericText(value: NSDecimalNumber(decimal: summary.earnings).doubleValue))
                 }
                 .font(Typography.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Palette.textPrimary)
                 actions(for: summary)
             }
             .padding()
-            .background(
-                LinearGradient(
-                    colors: [Color(red: 0.09, green: 0.17, blue: 0.31), Color(red: 0.16, green: 0.27, blue: 0.46)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                in: RoundedRectangle(cornerRadius: 22)
-            )
-            .shadow(color: .black.opacity(0.16), radius: 14, x: 0, y: 8)
+            .background(.background, in: RoundedRectangle(cornerRadius: 22))
+            .shadow(color: .black.opacity(colorScheme == .light ? 0.06 : 0.18), radius: 12, x: 0, y: 5)
             .animation(.snappy, value: summary.earnings)
         }
     }
@@ -66,7 +60,7 @@ struct ShiftCardView: View {
             if summary.hasTaskInTransit {
                 Text(.dashboardShiftCardEndBlockedMessage)
                     .font(Typography.caption)
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(colorScheme == .light ? Color.orange : .yellow)
             }
         case .finished:
             EmptyView()
