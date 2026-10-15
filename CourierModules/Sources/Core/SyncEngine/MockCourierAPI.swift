@@ -25,6 +25,7 @@ public final class MockCourierAPI: CourierAPI {
     private let latency: @Sendable (ClosedRange<Double>) -> TimeInterval
     private let snapshotData: Data?
     private let recordedRequests = Mutex<[Request]>([])
+    private let conflictedJobIDs = Mutex<Set<UUID>>([])
 
     public init(
         conditionsStore: any NetworkConditionsStore,
@@ -69,10 +70,16 @@ public final class MockCourierAPI: CourierAPI {
         } catch {
             throw .decodingFailed
         }
-        try await respond(method: method, path: path, idempotencyKey: job.id, body: body)
+        try await respond(method: method, path: path, idempotencyKey: job.id, body: body, jobCreatedAt: job.createdAt)
     }
 
-    private func respond(method: String, path: String, idempotencyKey: UUID?, body: Data?) async throws(SyncError) {
+    private func respond(
+        method: String,
+        path: String,
+        idempotencyKey: UUID?,
+        body: Data?,
+        jobCreatedAt: Date? = nil
+    ) async throws(SyncError) {
         let conditions = conditionsStore.load()
         guard !conditions.isOffline else {
             Log.network.info("\(method, privacy: .public) \(path, privacy: .public) failed: offline")
@@ -90,6 +97,12 @@ public final class MockCourierAPI: CourierAPI {
             $0.append(Request(method: method, path: path, idempotencyKey: idempotencyKey, body: body))
         }
         Log.network.info("\(method, privacy: .public) \(path, privacy: .public) received")
+        if conditions.simulatedFailure == .conflict, let idempotencyKey, let jobCreatedAt,
+            conflictedJobIDs.withLock({ $0.insert(idempotencyKey).inserted })
+        {
+            Log.network.error("\(method, privacy: .public) \(path, privacy: .public) failed: conflict")
+            throw .conflict(serverUpdatedAt: jobCreatedAt.addingTimeInterval(-1))
+        }
         if let failure = Self.error(for: conditions.simulatedFailure) {
             Log.network.error(
                 "\(method, privacy: .public) \(path, privacy: .public) failed: \(failure.description, privacy: .public)"
@@ -106,6 +119,8 @@ public final class MockCourierAPI: CourierAPI {
         case .serverError: .server(status: 500)
         case .serviceUnavailable: .server(status: 503)
         case .tooManyRequests: .server(status: 429)
+        case .unauthorized: .unauthorized
+        case .conflict: nil
         }
     }
 

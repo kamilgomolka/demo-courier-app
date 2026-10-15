@@ -18,6 +18,7 @@ struct FakeSyncHarness {
             jobRepository: repository,
             localDataResetter: repository,
             api: api,
+            sessionRefresher: MockSessionRefresher(conditionsStore: conditions),
             timeSource: timeSource
         )
     }
@@ -53,7 +54,12 @@ struct StoreBackedHarness {
         self.store = store
         self.timeSource = timeSource
         api = MockCourierAPI(conditionsStore: conditions, timeSource: timeSource, latency: { _ in latency })
-        syncActor = SyncActor(jobRepository: store, localDataResetter: store, api: api, timeSource: timeSource)
+        syncActor = SyncActor(
+            jobRepository: store, localDataResetter: store,
+            api: api,
+            sessionRefresher: MockSessionRefresher(conditionsStore: conditions),
+            timeSource: timeSource
+        )
     }
 
     static func inMemory(latency: TimeInterval = 0, shiftStarted: Bool = true) async throws -> StoreBackedHarness {

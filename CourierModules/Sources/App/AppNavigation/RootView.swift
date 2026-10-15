@@ -16,8 +16,10 @@ public struct RootView: View {
                 MainTabView(environment: environment, router: router)
                     .task { await environment.start() }
                     .onChange(of: scenePhase) { _, newPhase in
-                        if newPhase == .active {
-                            environment.requestSync(.foreground)
+                        switch newPhase {
+                        case .active: environment.requestSync(.foreground)
+                        case .background: environment.extendExecutionUntilOutboxDrains()
+                        default: break
                         }
                     }
             } else if didFailToStart {

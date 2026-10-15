@@ -151,6 +151,8 @@ public struct SettingsView: View {
         case .serverError: .settingsFailureServerError
         case .serviceUnavailable: .settingsFailureServiceUnavailable
         case .tooManyRequests: .settingsFailureTooManyRequests
+        case .unauthorized: .settingsFailureUnauthorized
+        case .conflict: .settingsFailureConflict
         }
     }
 }

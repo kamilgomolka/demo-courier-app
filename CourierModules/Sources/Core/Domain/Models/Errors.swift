@@ -1,3 +1,5 @@
+public import Foundation
+
 public enum RepositoryError: Error, Equatable, Sendable {
     case invalidTransition
     case anotherTaskInTransit
@@ -17,6 +19,8 @@ public enum SyncError: Error, Equatable, Sendable, CustomStringConvertible {
     case connectionLost
     case server(status: Int)
     case decodingFailed
+    case unauthorized
+    case conflict(serverUpdatedAt: Date)
     case cancelled
     case storageFailure(String)
 
@@ -27,6 +31,8 @@ public enum SyncError: Error, Equatable, Sendable, CustomStringConvertible {
         case .connectionLost: "Connection lost"
         case .server(let status): "Server error \(status)"
         case .decodingFailed: "Invalid server response"
+        case .unauthorized: "Unauthorized (401)"
+        case .conflict: "Version conflict (409)"
         case .cancelled: "Cancelled"
         case .storageFailure(let message): "Local storage failure: \(message)"
         }

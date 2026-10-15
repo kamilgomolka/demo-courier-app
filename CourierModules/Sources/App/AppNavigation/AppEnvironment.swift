@@ -2,6 +2,7 @@ import Domain
 import Foundation
 import LocalStorage
 import SyncEngine
+import UIKit
 import os
 
 @MainActor
@@ -33,7 +34,12 @@ final class AppEnvironment {
                 conditionsStore.save(NetworkConditions(latencyRange: 0.1...0.3))
             }
             let api = MockCourierAPI(conditionsStore: conditionsStore)
-            let syncActor = SyncActor(jobRepository: store, localDataResetter: store, api: api)
+            let syncActor = SyncActor(
+                jobRepository: store,
+                localDataResetter: store,
+                api: api,
+                sessionRefresher: MockSessionRefresher(conditionsStore: conditionsStore)
+            )
             return AppEnvironment(store: store, syncActor: syncActor, networkConditionsStore: conditionsStore)
         } catch {
             Log.navigation.error("Failed to create storage: \(String(describing: error), privacy: .public)")
@@ -48,5 +54,21 @@ final class AppEnvironment {
 
     func requestSync(_ trigger: SyncTrigger) {
         Task { await syncActor.requestSync(trigger) }
+    }
+
+    func extendExecutionUntilOutboxDrains() {
+        let outboxDrained = Task { [store] in
+            for await jobs in store.observeJobs() where !jobs.contains(where: { $0.attemptCount == 0 }) {
+                return
+            }
+        }
+        let application = UIApplication.shared
+        let backgroundTaskIdentifier = application.beginBackgroundTask(withName: "outbox-drain") {
+            outboxDrained.cancel()
+        }
+        Task {
+            await outboxDrained.value
+            application.endBackgroundTask(backgroundTaskIdentifier)
+        }
     }
 }

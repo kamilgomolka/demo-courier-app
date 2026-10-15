@@ -17,6 +17,9 @@ public struct TaskDetailsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .task { await model.run() }
             .task(id: model.undoDeadline) { await model.finishWhenUndoWindowExpires() }
+            .sensoryFeedback(.success, trigger: model.task?.status) { previous, current in
+                previous == .inTransit && current == .delivered
+            }
             .onDisappear { Task { await model.commitDeliveryIfNeeded() } }
             .sheet(isPresented: $isExceptionSheetPresented) {
                 ExceptionReportSheet(

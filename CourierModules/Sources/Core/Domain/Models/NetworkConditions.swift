@@ -5,6 +5,8 @@ public enum SimulatedFailure: String, Codable, Sendable, CaseIterable {
     case serverError
     case serviceUnavailable
     case tooManyRequests
+    case unauthorized
+    case conflict
 }
 
 public struct NetworkConditions: Equatable, Codable, Sendable {

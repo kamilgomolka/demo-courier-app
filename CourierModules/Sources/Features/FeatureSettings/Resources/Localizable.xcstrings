@@ -1,6 +1,17 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "settings.failure.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version conflict (409)"
+          }
+        }
+      }
+    },
     "settings.failure.connectionLost": {
       "extractionState": "manual",
       "localizations": {
@@ -63,6 +74,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Too many requests (429)"
+          }
+        }
+      }
+    },
+    "settings.failure.unauthorized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unauthorized (401)"
           }
         }
       }

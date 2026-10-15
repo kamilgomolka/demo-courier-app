@@ -18,6 +18,7 @@ public actor SyncActor: SyncControlling {
     private let jobRepository: any SyncJobRepository
     private let localDataResetter: any LocalDataResetting
     private let api: any CourierAPI
+    private let sessionRefresher: any SessionRefreshing
     private let timeSource: any TimeSource
 
     private var observationTask: Task<Void, Never>?
@@ -35,11 +36,13 @@ public actor SyncActor: SyncControlling {
         jobRepository: any SyncJobRepository,
         localDataResetter: any LocalDataResetting,
         api: any CourierAPI,
+        sessionRefresher: any SessionRefreshing,
         timeSource: any TimeSource = SystemTimeSource()
     ) {
         self.jobRepository = jobRepository
         self.localDataResetter = localDataResetter
         self.api = api
+        self.sessionRefresher = sessionRefresher
         self.timeSource = timeSource
     }
 
@@ -183,7 +186,7 @@ public actor SyncActor: SyncControlling {
                 continue
             }
             do {
-                try await api.send(job)
+                try await sendResolvingRecoverableFailures(job)
             } catch {
                 await handleSendFailure(error, for: job)
                 if error == .offline || error == .cancelled { return }
@@ -199,6 +202,25 @@ public actor SyncActor: SyncControlling {
                 )
                 return
             }
+        }
+    }
+
+    private func sendResolvingRecoverableFailures(_ job: SyncJob) async throws(SyncError) {
+        do {
+            try await api.send(job)
+        } catch .unauthorized {
+            Log.sync.info("Job \(job.id, privacy: .public) unauthorized: refreshing session")
+            try await sessionRefresher.refresh()
+            try await api.send(job)
+        } catch .conflict(let serverUpdatedAt) {
+            guard job.createdAt >= serverUpdatedAt else {
+                Log.sync.info("Job \(job.id, privacy: .public) lost conflict: discarding")
+                return
+            }
+            Log.sync.info("Job \(job.id, privacy: .public) won conflict: resending")
+            try await api.send(job)
+        } catch {
+            throw error
         }
     }
 

@@ -12,6 +12,7 @@ struct MockCourierAPITests {
         (.serverError, .server(status: 500)),
         (.serviceUnavailable, .server(status: 503)),
         (.tooManyRequests, .server(status: 429)),
+        (.unauthorized, .unauthorized),
     ]
 
     private func makeAPI(_ conditions: NetworkConditions) -> MockCourierAPI {
