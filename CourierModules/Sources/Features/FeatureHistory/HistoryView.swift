@@ -20,8 +20,8 @@ public struct HistoryView: View {
             } else {
                 List(model.sections) { section in
                     Section {
-                        ForEach(section.tasks) { task in
-                            HistoryRowView(task: task)
+                        ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                            HistoryRowView(task: task, isLast: index == section.tasks.count - 1)
                                 .accessibilityIdentifier(HistoryAccessibility.row(id: task.id))
                         }
                     } header: {
@@ -37,24 +37,37 @@ public struct HistoryView: View {
 
 private struct HistoryRowView: View {
     let task: DeliveryTask
+    let isLast: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(task.recipientName)
-                    .font(Typography.headline)
-                    .foregroundStyle(Palette.textPrimary)
-                Spacer()
-                statusBadge
+        HStack(alignment: .top, spacing: 12) {
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(task.status == .exception ? Palette.danger : Palette.success)
+                    .frame(width: 10, height: 10)
+                Rectangle()
+                    .fill(Palette.textSecondary.opacity(isLast ? 0.18 : 0.42))
+                    .frame(width: 2)
             }
-            Text(subtitle)
-                .font(Typography.body)
-                .foregroundStyle(Palette.textSecondary)
-            if task.syncState == .pending {
-                StatusBadge(.historyBadgePendingSync, systemImage: "arrow.triangle.2.circlepath", tint: Palette.warning)
+            .frame(width: 12, height: 62, alignment: .top)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(task.recipientName)
+                        .font(Typography.headline)
+                        .foregroundStyle(Palette.textPrimary)
+                    Spacer()
+                    statusBadge
+                }
+                Text(subtitle)
+                    .font(Typography.body)
+                    .foregroundStyle(Palette.textSecondary)
+                if task.syncState == .pending {
+                    StatusBadge(.historyBadgePendingSync, systemImage: "arrow.triangle.2.circlepath", tint: Palette.warning)
+                        .symbolEffect(.rotate, options: .repeating)
+                }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 
     @ViewBuilder
@@ -62,7 +75,9 @@ private struct HistoryRowView: View {
         switch task.status {
         case .exception:
             StatusBadge(.historyBadgeException, systemImage: "exclamationmark.triangle.fill", tint: Palette.danger)
-        default:
+        case .new, .inTransit:
+            StatusBadge(.historyBadgeDelivered, systemImage: "checkmark.circle.fill", tint: Palette.success)
+        case .delivered:
             StatusBadge(.historyBadgeDelivered, systemImage: "checkmark.circle.fill", tint: Palette.success)
         }
     }

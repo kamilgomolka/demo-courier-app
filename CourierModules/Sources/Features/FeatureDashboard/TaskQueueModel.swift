@@ -34,6 +34,14 @@ final class TaskQueueModel {
         }
     }
 
+    func startDelivery(id: TaskID) async {
+        do {
+            try await taskRepository.startDelivery(id: id)
+        } catch {
+            failure = error
+        }
+    }
+
     func dismissFailure() {
         failure = nil
     }

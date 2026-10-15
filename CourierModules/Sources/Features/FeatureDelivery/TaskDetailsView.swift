@@ -6,9 +6,19 @@ public struct TaskDetailsView: View {
     @State private var model: TaskDetailsModel
     @State private var isExceptionSheetPresented = false
 
-    public init(taskID: TaskID, taskRepository: any TaskRepository, onFinish: @escaping () -> Void) {
+    public init(
+        taskID: TaskID,
+        taskRepository: any TaskRepository,
+        onDeliveryMarked: @escaping (DeliveryTask) -> Void = { _ in },
+        onFinish: @escaping () -> Void
+    ) {
         _model = State(
-            initialValue: TaskDetailsModel(taskID: taskID, taskRepository: taskRepository, onFinish: onFinish)
+            initialValue: TaskDetailsModel(
+                taskID: taskID,
+                taskRepository: taskRepository,
+                onDeliveryMarked: onDeliveryMarked,
+                onFinish: onFinish
+            )
         )
     }
 
@@ -20,7 +30,6 @@ public struct TaskDetailsView: View {
             .sensoryFeedback(.success, trigger: model.task?.status) { previous, current in
                 previous == .inTransit && current == .delivered
             }
-            .onDisappear { Task { await model.commitDeliveryIfNeeded() } }
             .sheet(isPresented: $isExceptionSheetPresented) {
                 ExceptionReportSheet(
                     onSave: { reason in
@@ -100,34 +109,14 @@ public struct TaskDetailsView: View {
             }
             .accessibilityIdentifier(DeliveryAccessibility.reportExceptionButton)
         case .delivered:
-            deliveredActions(completedAt: task.completedAt)
+            deliveredActions()
         case .exception:
             EmptyView()
         }
     }
 
     @ViewBuilder
-    private func deliveredActions(completedAt: Date?) -> some View {
-        if let completedAt, let undoDeadline = model.undoDeadline {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(.deliveryDetailsDeliveredTitle)
-                    .font(Typography.headline)
-                    .foregroundStyle(Palette.success)
-                ProgressView(timerInterval: completedAt...undoDeadline, countsDown: true) {
-                    Text(.deliveryDetailsUndoCountdownLabel)
-                } currentValueLabel: {
-                    EmptyView()
-                }
-                .tint(Palette.accent)
-            }
-            Button(String(localized: .deliveryDetailsUndoButton)) {
-                Task { await model.undoDelivery() }
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .disabled(model.isPerformingAction)
-            .accessibilityIdentifier(DeliveryAccessibility.undoButton)
-        }
+    private func deliveredActions() -> some View {
         PrimaryButton(.deliveryDetailsDoneButton) {
             Task { await model.completeDelivery() }
         }

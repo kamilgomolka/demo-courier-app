@@ -1,29 +1,32 @@
+import DesignSystem
 import Domain
 import SwiftUI
 
 struct ExceptionReportSheet: View {
     @State private var draft = ExceptionDraft()
+    @FocusState private var isDetailsFieldFocused: Bool
     let onSave: (ExceptionReason) -> Void
     let onCancel: () -> Void
 
     var body: some View {
         NavigationStack {
-            Form {
-                Picker(selection: $draft.choice) {
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
                     ForEach(ExceptionDraft.Choice.allCases, id: \.self) { choice in
-                        Text(title(for: choice))
-                            .tag(choice)
-                            .accessibilityIdentifier(DeliveryAccessibility.exceptionOption(String(describing: choice)))
+                        choiceCard(choice)
                     }
-                } label: {
-                    EmptyView()
                 }
-                .pickerStyle(.inline)
-                .labelsHidden()
+                .padding()
                 if draft.choice == .other {
                     TextField(text: $draft.details, axis: .vertical) {
                         Text(.deliveryExceptionDetailsPlaceholder)
                     }
+                    .lineLimit(3...5)
+                    .padding(12)
+                    .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.horizontal)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .focused($isDetailsFieldFocused)
                     .accessibilityIdentifier(DeliveryAccessibility.exceptionDetailsField)
                 }
             }
@@ -42,6 +45,48 @@ struct ExceptionReportSheet: View {
                     .accessibilityIdentifier(DeliveryAccessibility.exceptionSaveButton)
                 }
             }
+            .sensoryFeedback(.selection, trigger: draft.choice)
+            .animation(.spring(response: 0.32, dampingFraction: 0.78), value: draft.choice)
+            .onChange(of: draft.choice) { _, choice in
+                isDetailsFieldFocused = choice == .other
+            }
+        }
+    }
+
+    private func choiceCard(_ choice: ExceptionDraft.Choice) -> some View {
+        let isSelected = draft.choice == choice
+        return Button {
+            draft.choice = choice
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                Image(systemName: symbol(for: choice))
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(isSelected ? Palette.danger : Palette.textSecondary)
+                Text(title(for: choice))
+                    .font(Typography.headline)
+                    .foregroundStyle(Palette.textPrimary)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
+            .padding(14)
+            .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(isSelected ? Palette.danger : .clear, lineWidth: 2)
+            }
+            .scaleEffect(isSelected ? 1.02 : 1)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(DeliveryAccessibility.exceptionOption(String(describing: choice)))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private func symbol(for choice: ExceptionDraft.Choice) -> String {
+        switch choice {
+        case .customerNoShow: "person.crop.circle.badge.xmark"
+        case .addressNotFound: "mappin.slash"
+        case .packageDamaged: "shippingbox.and.arrow.backward"
+        case .other: "ellipsis.bubble"
         }
     }
 

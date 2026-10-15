@@ -12,6 +12,7 @@ final class TaskDetailsModel {
     @ObservationIgnored private let taskRepository: any TaskRepository
     @ObservationIgnored private let timeSource: any TimeSource
     @ObservationIgnored private let onFinish: () -> Void
+    @ObservationIgnored private let onDeliveryMarked: (DeliveryTask) -> Void
     @ObservationIgnored private var isFinished = false
     @ObservationIgnored private var hasLoadedTask = false
 
@@ -19,11 +20,13 @@ final class TaskDetailsModel {
         taskID: TaskID,
         taskRepository: any TaskRepository,
         timeSource: any TimeSource = SystemTimeSource(),
+        onDeliveryMarked: @escaping (DeliveryTask) -> Void = { _ in },
         onFinish: @escaping () -> Void
     ) {
         self.taskID = taskID
         self.taskRepository = taskRepository
         self.timeSource = timeSource
+        self.onDeliveryMarked = onDeliveryMarked
         self.onFinish = onFinish
     }
 
@@ -34,8 +37,13 @@ final class TaskDetailsModel {
 
     func run() async {
         for await updatedTask in taskRepository.observeTask(id: taskID) {
+            let previousStatus = task?.status
             if task != updatedTask {
                 task = updatedTask
+            }
+            if previousStatus == .inTransit, let updatedTask, updatedTask.status == .delivered {
+                onDeliveryMarked(updatedTask)
+                finish()
             }
             if updatedTask != nil {
                 hasLoadedTask = true
