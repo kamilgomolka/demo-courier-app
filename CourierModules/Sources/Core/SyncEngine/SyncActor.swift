@@ -3,6 +3,11 @@ import Foundation
 import os
 
 public actor SyncActor: SyncControlling {
+    private enum SendResolution {
+        case sent
+        case serverWon(RemoteSnapshot)
+    }
+
     private struct JobFingerprint: Hashable {
         let id: UUID
         let kind: SyncJobKind
@@ -185,8 +190,9 @@ public actor SyncActor: SyncControlling {
                 if let taskID { blockedTaskIDs.insert(taskID) }
                 continue
             }
+            let resolution: SendResolution
             do {
-                try await sendResolvingRecoverableFailures(job)
+                resolution = try await sendResolvingRecoverableFailures(job)
             } catch {
                 await handleSendFailure(error, for: job)
                 if error == .offline || error == .cancelled { return }
@@ -194,7 +200,12 @@ public actor SyncActor: SyncControlling {
                 continue
             }
             do {
-                try await jobRepository.markSynced(jobID: job.id)
+                switch resolution {
+                case .sent:
+                    try await jobRepository.markSynced(jobID: job.id)
+                case .serverWon(let snapshot):
+                    try await jobRepository.resolveConflict(jobID: job.id, serverSnapshot: snapshot)
+                }
                 Log.sync.info("Job \(job.id, privacy: .public) synced")
             } catch {
                 Log.sync.error(
@@ -205,20 +216,23 @@ public actor SyncActor: SyncControlling {
         }
     }
 
-    private func sendResolvingRecoverableFailures(_ job: SyncJob) async throws(SyncError) {
+    private func sendResolvingRecoverableFailures(_ job: SyncJob) async throws(SyncError) -> SendResolution {
         do {
             try await api.send(job)
+            return .sent
         } catch .unauthorized {
             Log.sync.info("Job \(job.id, privacy: .public) unauthorized: refreshing session")
             try await sessionRefresher.refresh()
             try await api.send(job)
+            return .sent
         } catch .conflict(let serverUpdatedAt) {
             guard job.createdAt >= serverUpdatedAt else {
-                Log.sync.info("Job \(job.id, privacy: .public) lost conflict: discarding")
-                return
+                Log.sync.info("Job \(job.id, privacy: .public) lost conflict: fetching server state")
+                return .serverWon(try await fetchSnapshotRefreshingSession())
             }
             Log.sync.info("Job \(job.id, privacy: .public) won conflict: resending")
             try await api.send(job)
+            return .sent
         } catch {
             throw error
         }
@@ -260,7 +274,7 @@ public actor SyncActor: SyncControlling {
     private func fetchAndMergeSnapshot() async -> Result<Void, SyncError> {
         let snapshot: RemoteSnapshot
         do {
-            snapshot = try await api.fetchSnapshot()
+            snapshot = try await fetchSnapshotRefreshingSession()
         } catch {
             return .failure(error)
         }
@@ -271,6 +285,18 @@ public actor SyncActor: SyncControlling {
             return .failure(.storageFailure(String(describing: error)))
         }
         return .success(())
+    }
+
+    private func fetchSnapshotRefreshingSession() async throws(SyncError) -> RemoteSnapshot {
+        do {
+            return try await api.fetchSnapshot()
+        } catch .unauthorized {
+            Log.sync.info("Snapshot request unauthorized: refreshing session")
+            try await sessionRefresher.refresh()
+            return try await api.fetchSnapshot()
+        } catch {
+            throw error
+        }
     }
 
     // MARK: Reset

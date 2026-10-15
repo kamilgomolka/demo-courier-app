@@ -50,6 +50,11 @@ public final class FakeSyncJobRepository: SyncJobRepository, LocalDataResetting 
         remove(jobID: jobID)
     }
 
+    public func resolveConflict(jobID: UUID, serverSnapshot: RemoteSnapshot) async throws(RepositoryError) {
+        state.withLock { $0.mergedSnapshots.append(serverSnapshot) }
+        remove(jobID: jobID)
+    }
+
     public func recordFailure(jobID: UUID, failure: String) async throws(RepositoryError) {
         jobs.update { jobs in
             guard let index = jobs.firstIndex(where: { $0.id == jobID }) else { return }

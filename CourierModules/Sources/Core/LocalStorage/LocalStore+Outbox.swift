@@ -12,6 +12,44 @@ extension LocalStore {
         try transact { modelContext.delete(record) }
     }
 
+    public func resolveConflict(jobID: UUID, serverSnapshot: RemoteSnapshot) async throws(RepositoryError) {
+        guard let jobRecord = try fetch(SyncJobRecord.self).first(where: { $0.id == jobID }) else { return }
+        let job = try jobRecord.makeDomain()
+        let hasNewerLocalWrite = try jobsSnapshot().contains { candidate in
+            guard candidate.id != job.id, candidate.createdAt >= job.createdAt else { return false }
+            return switch (job.kind, candidate.kind) {
+            case (.updateStatus(let taskID, _, _), .updateStatus(let candidateTaskID, _, _)):
+                taskID == candidateTaskID
+            case (.reorder, .reorder):
+                true
+            default:
+                false
+            }
+        }
+        try transact { () throws(RepositoryError) in
+            if !hasNewerLocalWrite {
+                switch job.kind {
+                case .updateStatus(let taskID, _, _):
+                    guard let serverTask = serverSnapshot.tasks.first(where: { $0.id == taskID }) else {
+                        throw .taskNotFound
+                    }
+                    try taskRecord(id: taskID).apply(serverTask)
+                case .reorder(let orderedTaskIDs):
+                    let updates = try orderedTaskIDs.map { taskID throws(RepositoryError) in
+                        guard let serverTask = serverSnapshot.tasks.first(where: { $0.id == taskID }) else {
+                            throw .taskNotFound
+                        }
+                        return (record: try taskRecord(id: taskID), sortOrder: serverTask.sortOrder)
+                    }
+                    for update in updates {
+                        update.record.sortOrder = update.sortOrder
+                    }
+                }
+            }
+            modelContext.delete(jobRecord)
+        }
+    }
+
     public func recordFailure(jobID: UUID, failure: String) async throws(RepositoryError) {
         guard let record = try fetch(SyncJobRecord.self).first(where: { $0.id == jobID }) else { return }
         try transact {

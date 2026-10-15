@@ -9,9 +9,10 @@ import Testing
 struct SyncRecoveryTests {
     private final class NewerServerAPI: CourierAPI {
         let sendCount = Mutex(0)
+        let snapshot = RemoteSnapshot.fixture()
 
         func fetchSnapshot() async throws(SyncError) -> RemoteSnapshot {
-            throw .cancelled
+            snapshot
         }
 
         func send(_ job: SyncJob) async throws(SyncError) {
@@ -30,6 +31,17 @@ struct SyncRecoveryTests {
         #expect(await eventually { harness.repository.jobs.current.isEmpty })
         #expect(harness.api.requests.count == 2)
         #expect(harness.conditions.load().simulatedFailure == .none)
+    }
+
+    @Test func unauthorizedInitialLoadRefreshesSessionAndRetries() async throws {
+        let harness = FakeSyncHarness()
+        harness.conditions.save(NetworkConditions(latencyRange: 0...0, simulatedFailure: .unauthorized))
+
+        try await harness.syncActor.loadInitialData()
+
+        #expect(harness.api.requests.count == 2)
+        #expect(harness.conditions.load().simulatedFailure == .none)
+        #expect(harness.repository.mergedSnapshots.count == 1)
     }
 
     @Test func unauthorizedAfterRefreshRecordsFailure() async throws {
@@ -79,6 +91,7 @@ struct SyncRecoveryTests {
 
         #expect(await eventually { harness.repository.jobs.current.isEmpty })
         #expect(api.sendCount.withLock { $0 } == 1)
+        #expect(harness.repository.mergedSnapshots == [api.snapshot])
         await actor.stop()
     }
 }

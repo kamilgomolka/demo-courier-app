@@ -226,6 +226,42 @@ struct TaskTransitionTests {
         try await fixture.store.markSynced(jobID: UUID())
     }
 
+    @Test func resolvingStatusConflictAppliesServerWinnerAndRemovesJob() async throws {
+        let fixture = try await StoreFixture.make()
+        try await fixture.store.startDelivery(id: "task-1")
+        let job = try #require(try await fixture.jobs().first)
+
+        try await fixture.store.resolveConflict(jobID: job.id, serverSnapshot: StoreFixture.snapshot())
+
+        #expect(try await fixture.task("task-1").status == .new)
+        #expect(try await fixture.task("task-1").syncState == .synced)
+        #expect(try await fixture.jobs().isEmpty)
+    }
+
+    @Test func resolvingReorderConflictAppliesServerOrderAndRemovesJob() async throws {
+        let fixture = try await StoreFixture.make()
+        try await fixture.store.reorderQueue(orderedTaskIDs: ["task-2", "task-1", "task-3", "task-4", "task-5"])
+        let job = try #require(try await fixture.jobs().first)
+
+        try await fixture.store.resolveConflict(jobID: job.id, serverSnapshot: StoreFixture.snapshot())
+
+        #expect(try await fixture.queueIDs() == ["task-1", "task-2", "task-3", "task-4", "task-5"])
+        #expect(try await fixture.jobs().isEmpty)
+    }
+
+    @Test func resolvingConflictPreservesNewerPendingLocalWrite() async throws {
+        let fixture = try await StoreFixture.make()
+        try await fixture.store.startDelivery(id: "task-1")
+        try await fixture.store.markDelivered(id: "task-1")
+        let firstJob = try #require(try await fixture.jobs().first)
+
+        try await fixture.store.resolveConflict(jobID: firstJob.id, serverSnapshot: StoreFixture.snapshot())
+
+        #expect(try await fixture.task("task-1").status == .delivered)
+        #expect(try await fixture.task("task-1").syncState == .pending)
+        #expect(try await fixture.jobs().count == 1)
+    }
+
     @Test func recordFailureStoresDiagnosticsWithoutChangingTaskState() async throws {
         let fixture = try await StoreFixture.make()
         try await fixture.store.startDelivery(id: "task-1")

@@ -93,6 +93,27 @@ struct SettingsModelTests {
         #expect(syncController.triggers == [.manual])
     }
 
+    @Test func syncNowReloadsConditionsChangedBySessionRefresh() async {
+        conditionsStore.save(NetworkConditions(simulatedFailure: .unauthorized))
+        let model = makeModel()
+        conditionsStore.save(NetworkConditions())
+
+        await model.syncNow()
+
+        #expect(model.conditions.simulatedFailure == .none)
+    }
+
+    @Test func editingConditionsDoesNotRestoreExternallyClearedFailure() {
+        conditionsStore.save(NetworkConditions(latencyRange: 1...2, simulatedFailure: .unauthorized))
+        let model = makeModel()
+        conditionsStore.save(NetworkConditions(latencyRange: 1...2))
+
+        model.setLatencyUpperBound(3)
+
+        #expect(model.conditions == NetworkConditions(latencyRange: 1...3))
+        #expect(conditionsStore.load() == NetworkConditions(latencyRange: 1...3))
+    }
+
     @Test func resetDelegatesToSyncController() async {
         let model = makeModel()
 
