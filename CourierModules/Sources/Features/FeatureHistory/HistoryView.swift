@@ -85,10 +85,10 @@ private struct HistoryRowView: View {
                 Path { path in
                     if !isFirst {
                         path.move(to: CGPoint(x: 8, y: 0))
-                        path.addLine(to: CGPoint(x: 8, y: geometry.size.height / 2))
+                        path.addLine(to: CGPoint(x: 8, y: 28))
                     }
                     if !isLast {
-                        path.move(to: CGPoint(x: 8, y: geometry.size.height / 2))
+                        path.move(to: CGPoint(x: 8, y: 28))
                         path.addLine(to: CGPoint(x: 8, y: geometry.size.height))
                     }
                 }
@@ -96,7 +96,7 @@ private struct HistoryRowView: View {
                 Circle()
                     .fill(task.status == .exception ? Palette.danger : Palette.success)
                     .frame(width: 12, height: 12)
-                    .position(x: 8, y: geometry.size.height / 2)
+                    .position(x: 8, y: 28)
             }
         }
     }

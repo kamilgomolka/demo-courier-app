@@ -11,36 +11,46 @@ struct ExceptionReportSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
-                    ForEach(ExceptionDraft.Choice.allCases, id: \.self) { choice in
-                        choiceCard(choice)
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(.deliveryExceptionTitle)
+                        .font(.title2.weight(.bold))
+                        .padding(.horizontal)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
+                        ForEach(ExceptionDraft.Choice.allCases, id: \.self) { choice in
+                            choiceCard(choice)
+                        }
                     }
-                }
-                .padding()
-                if draft.choice == .other {
-                    TextField(text: $draft.details, axis: .vertical) {
-                        Text(.deliveryExceptionDetailsPlaceholder)
-                    }
-                    .lineLimit(3...5)
-                    .padding(12)
-                    .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .focused($isDetailsFieldFocused)
-                    .accessibilityIdentifier(DeliveryAccessibility.exceptionDetailsField)
+                    if draft.choice == .other {
+                        TextField(text: $draft.details, axis: .vertical) {
+                            Text(.deliveryExceptionDetailsPlaceholder)
+                        }
+                        .lineLimit(3...5)
+                        .padding(12)
+                        .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 14))
+                        .padding(.horizontal)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .focused($isDetailsFieldFocused)
+                        .accessibilityIdentifier(DeliveryAccessibility.exceptionDetailsField)
+                    }
                 }
+                .padding(.top, 20)
             }
-            .navigationTitle(Text(.deliveryExceptionTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: .deliveryExceptionCancelButton), action: onCancel)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: .deliveryExceptionSaveButton)) {
+                    Button {
                         guard let reason = draft.reason else { return }
                         onSave(reason)
+                    } label: {
+                        Label(.deliveryExceptionSaveButton, systemImage: "checkmark")
+                            .labelStyle(.titleAndIcon)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Palette.success)
                     .disabled(draft.reason == nil)
                     .accessibilityIdentifier(DeliveryAccessibility.exceptionSaveButton)
                 }
