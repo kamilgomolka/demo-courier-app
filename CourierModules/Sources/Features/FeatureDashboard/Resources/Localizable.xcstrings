@@ -155,6 +155,17 @@
         }
       }
     },
+    "dashboard.queue.reorder.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag the handles to change the order of your next stops."
+          }
+        }
+      }
+    },
     "dashboard.queue.startDeliveryAction": {
       "extractionState": "manual",
       "localizations": {

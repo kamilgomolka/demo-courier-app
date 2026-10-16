@@ -3,6 +3,7 @@ import Domain
 import SwiftUI
 
 struct TaskQueueView: View {
+    @State private var editMode: EditMode = .inactive
     let shiftCardModel: ShiftCardModel
     let queueModel: TaskQueueModel
     let isInteractive: Bool
@@ -11,7 +12,14 @@ struct TaskQueueView: View {
     var body: some View {
         List {
             Section {
-                ShiftCardView(model: shiftCardModel)
+                if editMode.isEditing {
+                    Label(.dashboardQueueReorderMessage, systemImage: "line.3.horizontal")
+                        .font(Typography.body)
+                        .foregroundStyle(Palette.textSecondary)
+                        .padding(20)
+                } else {
+                    ShiftCardView(model: shiftCardModel)
+                }
             }
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets())
@@ -22,8 +30,14 @@ struct TaskQueueView: View {
                 }
             }
             Section(String(localized: .dashboardQueueUpcomingHeader)) {
-                ForEach(queueModel.upcomingTasks) { task in
+                ForEach(Array(queueModel.upcomingTasks.enumerated()), id: \.element.id) { index, task in
                     row(for: task)
+                        .listRowSeparator(.hidden)
+                        .overlay(alignment: .bottom) {
+                            if index < queueModel.upcomingTasks.count - 1 {
+                                Divider().padding(.horizontal, 4)
+                            }
+                        }
                 }
                 .onMove { source, destination in
                     Task { await queueModel.moveUpcomingTasks(fromOffsets: source, toOffset: destination) }
@@ -48,6 +62,7 @@ struct TaskQueueView: View {
                 }
             }
         }
+        .environment(\.editMode, $editMode)
     }
 
     private func row(for task: DeliveryTask) -> some View {

@@ -99,4 +99,16 @@ final class CourierAppUITests: XCTestCase {
         app.buttons["dashboard.reopenShiftButton"].tap()
         XCTAssertTrue(app.buttons["dashboard.endShiftButton"].waitForExistence(timeout: 5.0))
     }
+
+    func testEditingStopsReplacesShiftCardWithReorderInstructions() throws {
+        app.buttons["dashboard.startShiftButton"].tap()
+        XCTAssertTrue(app.buttons["dashboard.endShiftButton"].waitForExistence(timeout: 5.0))
+
+        app.buttons["Edit"].tap()
+        XCTAssertFalse(app.buttons["dashboard.endShiftButton"].exists)
+        XCTAssertTrue(app.staticTexts["Drag the handles to change the order of your next stops."].exists)
+
+        app.buttons["Done"].tap()
+        XCTAssertTrue(app.buttons["dashboard.endShiftButton"].exists)
+    }
 }

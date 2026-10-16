@@ -67,13 +67,14 @@ struct ShiftCardView: View {
                 RoundedRectangle(cornerRadius: 24)
                     .strokeBorder(cardAccent.opacity(isDark ? 0 : 0.14), lineWidth: 1)
             }
+            .padding(1)
             .animation(.snappy, value: summary.earnings)
             .confirmationDialog(
                 Text(.dashboardShiftCardEndConfirmationTitle),
                 isPresented: $isEndConfirmationPresented,
                 titleVisibility: .visible
             ) {
-                Button(String(localized: .dashboardShiftCardEndConfirmButton), role: .destructive) {
+                Button(String(localized: .dashboardShiftCardEndConfirmButton)) {
                     Task { await model.endShift() }
                 }
                 .accessibilityIdentifier(DashboardAccessibility.endShiftConfirmButton)
@@ -101,13 +102,18 @@ struct ShiftCardView: View {
                     .font(Typography.headline)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
-                    .foregroundStyle(isBlocked ? cardSecondary : cardPrimary)
+                    .foregroundStyle(isBlocked ? cardSecondary : .white)
                     .background(
-                        isDark
-                            ? Color.white.opacity(isBlocked ? 0.07 : 0.12)
-                            : Color.white.opacity(isBlocked ? 0.5 : 0.9),
+                        isBlocked ? cardAccent.opacity(0.12) : Color(red: 0.62, green: 0.28, blue: 0),
                         in: RoundedRectangle(cornerRadius: 16)
                     )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(
+                                isBlocked ? cardAccent.opacity(0.18) : Color(red: 0.47, green: 0.21, blue: 0),
+                                lineWidth: 1
+                            )
+                    }
             }
             .buttonStyle(.plain)
             .disabled(isBlocked)

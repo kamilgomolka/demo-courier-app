@@ -63,13 +63,13 @@ private struct HistoryRowView: View {
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary)
                 if let completedAt = task.completedAt {
-                    Label {
-                        Text(completedAt, format: .dateTime.hour().minute())
-                    } icon: {
+                    HStack(spacing: 4) {
                         Image(systemName: "clock")
+                        Text(completedAt, format: .dateTime.hour().minute())
                     }
                     .font(Typography.caption)
                     .foregroundStyle(Palette.textSecondary)
+                    .padding(.top, 6)
                 }
                 if task.syncState == .pending {
                     StatusBadge(
@@ -85,10 +85,10 @@ private struct HistoryRowView: View {
                 Path { path in
                     if !isFirst {
                         path.move(to: CGPoint(x: 8, y: 0))
-                        path.addLine(to: CGPoint(x: 8, y: 26))
+                        path.addLine(to: CGPoint(x: 8, y: geometry.size.height / 2))
                     }
                     if !isLast {
-                        path.move(to: CGPoint(x: 8, y: 26))
+                        path.move(to: CGPoint(x: 8, y: geometry.size.height / 2))
                         path.addLine(to: CGPoint(x: 8, y: geometry.size.height))
                     }
                 }
@@ -96,7 +96,7 @@ private struct HistoryRowView: View {
                 Circle()
                     .fill(task.status == .exception ? Palette.danger : Palette.success)
                     .frame(width: 12, height: 12)
-                    .position(x: 8, y: 26)
+                    .position(x: 8, y: geometry.size.height / 2)
             }
         }
     }

@@ -61,7 +61,7 @@ struct ExceptionReportSheet: View {
             VStack(alignment: .leading, spacing: 12) {
                 Image(systemName: symbol(for: choice))
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(isSelected ? Palette.danger : Palette.textSecondary)
+                    .foregroundStyle(isSelected ? Palette.accent : Palette.textSecondary)
                 Text(title(for: choice))
                     .font(Typography.headline)
                     .foregroundStyle(Palette.textPrimary)
@@ -72,7 +72,7 @@ struct ExceptionReportSheet: View {
             .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
             .overlay {
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(isSelected ? Palette.danger : .clear, lineWidth: 2)
+                    .strokeBorder(isSelected ? Palette.accent : .clear, lineWidth: 2)
             }
             .scaleEffect(isSelected ? 1.02 : 1)
         }

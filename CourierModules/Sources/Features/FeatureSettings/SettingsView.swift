@@ -70,15 +70,16 @@ public struct SettingsView: View {
                     }
                 )
             ) {
+                Text(.settingsFailureNone).tag(SimulationChoice.failure(.none))
                 Text(.settingsSimulationOffline).tag(SimulationChoice.offline)
-                ForEach(SimulatedFailure.allCases, id: \.self) { failure in
+                ForEach(SimulatedFailure.allCases.filter { $0 != .none }, id: \.self) { failure in
                     Text(title(for: failure)).tag(SimulationChoice.failure(failure))
                 }
             } label: {
                 Label(.settingsSimulationFailure, systemImage: "wifi.exclamationmark")
             }
             .accessibilityIdentifier(SettingsAccessibility.simulatedFailurePicker)
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 18) {
                 Label(.settingsSimulationLatency, systemImage: "timer")
                 latencyStepper(
                     title: .settingsSimulationLatencyFrom,
@@ -87,7 +88,7 @@ public struct SettingsView: View {
                         set: { model.setLatencyLowerBound($0) }
                     )
                 )
-                Divider()
+                .padding(.leading, 32)
                 latencyStepper(
                     title: .settingsSimulationLatencyTo,
                     value: Binding(
@@ -95,6 +96,7 @@ public struct SettingsView: View {
                         set: { model.setLatencyUpperBound($0) }
                     )
                 )
+                .padding(.leading, 32)
             }
         } header: {
             Text(.settingsSimulationHeader)
@@ -103,10 +105,11 @@ public struct SettingsView: View {
 
     private var dataSection: some View {
         Section {
-            Button(role: .destructive) {
+            Button {
                 isResetConfirmationPresented = true
             } label: {
                 Label(.settingsResetButton, systemImage: "arrow.counterclockwise")
+                    .foregroundStyle(Palette.accent)
             }
             .disabled(model.isResetting)
             .accessibilityIdentifier(SettingsAccessibility.resetButton)
@@ -115,7 +118,7 @@ public struct SettingsView: View {
                 isPresented: $isResetConfirmationPresented,
                 titleVisibility: .visible
             ) {
-                Button(String(localized: .settingsResetConfirmButton), role: .destructive) {
+                Button(String(localized: .settingsResetConfirmButton)) {
                     Task { await model.resetLocalData() }
                 }
                 .accessibilityIdentifier(SettingsAccessibility.resetConfirmButton)
@@ -131,6 +134,7 @@ public struct SettingsView: View {
                 Task { await model.syncNow() }
             } label: {
                 Label(.settingsSyncNowButton, systemImage: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(model.jobs.isEmpty ? Palette.textSecondary : Palette.accent)
             }
             .disabled(model.jobs.isEmpty)
             .accessibilityIdentifier(SettingsAccessibility.syncNowButton)
@@ -198,7 +202,7 @@ private struct SyncJobRowView: View {
             if let lastFailure = job.lastFailure {
                 Text(verbatim: lastFailure)
                     .font(Typography.caption)
-                    .foregroundStyle(Palette.danger)
+                    .foregroundStyle(Palette.warning)
             }
         }
     }
