@@ -14,6 +14,8 @@ struct ExceptionReportSheet: View {
                 VStack(alignment: .leading, spacing: 20) {
                     Text(.deliveryExceptionTitle)
                         .font(.title2.weight(.bold))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
                         .padding(.horizontal)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
                         ForEach(ExceptionDraft.Choice.allCases, id: \.self) { choice in
