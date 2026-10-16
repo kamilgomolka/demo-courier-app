@@ -8,9 +8,18 @@ struct ShiftCardView: View {
     @State private var isEndConfirmationPresented = false
 
     private var isDark: Bool { colorScheme == .dark }
-    private var cardAccent: Color { isDark ? Color(red: 1, green: 0.51, blue: 0.28) : Palette.accent }
-    private var cardBackground: Color {
-        isDark ? Color(red: 0.10, green: 0.14, blue: 0.15) : Color(red: 1, green: 0.96, blue: 0.91)
+    private var cardAccent: Color { Palette.accent }
+    private var cardBackground: LinearGradient {
+        LinearGradient(
+            colors: isDark
+                ? [Color(red: 0.06, green: 0.14, blue: 0.11), Palette.surfaceCard]
+                : [
+                    Color(red: 235 / 255, green: 248 / 255, blue: 242 / 255),
+                    Color(red: 244 / 255, green: 251 / 255, blue: 247 / 255),
+                ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
     private var cardPrimary: Color { isDark ? .white : Palette.textPrimary }
     private var cardSecondary: Color { isDark ? .white.opacity(0.72) : Palette.textSecondary }
@@ -33,14 +42,21 @@ struct ShiftCardView: View {
                         .font(.title2)
                         .foregroundStyle(cardAccent)
                         .frame(width: 48, height: 48)
-                        .background(cardAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+                        .background(Palette.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
-                            Capsule().fill(cardAccent.opacity(isDark ? 0.22 : 0.16))
+                            Capsule().fill(Palette.mint.opacity(0.12))
                             Capsule()
-                                .fill(cardAccent)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Palette.mint, Palette.mintHighlight],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .shadow(color: Palette.mintHighlight.opacity(0.35), radius: 3)
                                 .frame(width: geometry.size.width * min(max(summary.progress, 0), 1))
                         }
                     }
@@ -65,7 +81,7 @@ struct ShiftCardView: View {
             .background(cardBackground, in: RoundedRectangle(cornerRadius: 24))
             .overlay {
                 RoundedRectangle(cornerRadius: 24)
-                    .strokeBorder(cardAccent.opacity(isDark ? 0 : 0.14), lineWidth: 1)
+                    .strokeBorder(Palette.mint.opacity(0.12), lineWidth: 1)
             }
             .padding(1)
             .animation(.snappy, value: summary.earnings)
@@ -95,33 +111,15 @@ struct ShiftCardView: View {
             .accessibilityIdentifier(DashboardAccessibility.startShiftButton)
         case .active:
             let isBlocked = summary.hasTaskInTransit || model.isPerformingAction
-            Button {
+            PrimaryButton(.dashboardShiftCardEndButton, systemImage: "stop.fill") {
                 isEndConfirmationPresented = true
-            } label: {
-                Label(.dashboardShiftCardEndButton, systemImage: "stop.fill")
-                    .font(Typography.headline)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .foregroundStyle(isBlocked ? cardSecondary : .white)
-                    .background(
-                        isBlocked ? cardAccent.opacity(0.12) : Color(red: 0.62, green: 0.28, blue: 0),
-                        in: RoundedRectangle(cornerRadius: 16)
-                    )
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(
-                                isBlocked ? cardAccent.opacity(0.18) : Color(red: 0.47, green: 0.21, blue: 0),
-                                lineWidth: 1
-                            )
-                    }
             }
-            .buttonStyle(.plain)
             .disabled(isBlocked)
             .accessibilityIdentifier(DashboardAccessibility.endShiftButton)
             if summary.hasTaskInTransit {
                 Label(.dashboardShiftCardEndBlockedMessage, systemImage: "info.circle")
                     .font(Typography.caption)
-                    .foregroundStyle(isDark ? Color(red: 1, green: 0.72, blue: 0.42) : Palette.warning)
+                    .foregroundStyle(Palette.warning)
             }
         case .finished:
             PrimaryButton(.dashboardShiftCardReopenButton, systemImage: "arrow.counterclockwise") {

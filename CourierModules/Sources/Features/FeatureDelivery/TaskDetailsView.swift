@@ -163,11 +163,11 @@ public struct TaskDetailsView: View {
                     Label(.deliveryDetailsReportExceptionButton, systemImage: "exclamationmark.bubble")
                         .font(Typography.headline)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .foregroundStyle(Palette.danger)
+                        .background(Palette.danger.opacity(0.08), in: RoundedRectangle(cornerRadius: 18))
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .buttonBorderShape(.roundedRectangle(radius: 16))
-                .tint(Palette.danger)
+                .buttonStyle(.plain)
                 .accessibilityIdentifier(DeliveryAccessibility.reportExceptionButton)
             case .delivered, .exception:
                 PrimaryButton(.deliveryDetailsDoneButton, systemImage: "checkmark") {

@@ -41,6 +41,22 @@ struct PaletteTests {
         }
     }
 
+    @Test func electricMintPaletteMatchesBrandInBothAppearances() {
+        for (scheme, accent, background) in [
+            (ColorScheme.light, (0.000, 0.580, 0.380), (0.965, 0.973, 0.969)),
+            (ColorScheme.dark, (0.000, 0.900, 0.600), (0.050, 0.065, 0.060)),
+        ] {
+            let resolvedAccent = resolved(Palette.accent, in: scheme)
+            let resolvedBackground = resolved(Palette.backgroundPrimary, in: scheme)
+            #expect(abs(Double(resolvedAccent.red) - accent.0) < 0.002)
+            #expect(abs(Double(resolvedAccent.green) - accent.1) < 0.002)
+            #expect(abs(Double(resolvedAccent.blue) - accent.2) < 0.002)
+            #expect(abs(Double(resolvedBackground.red) - background.0) < 0.002)
+            #expect(abs(Double(resolvedBackground.green) - background.1) < 0.002)
+            #expect(abs(Double(resolvedBackground.blue) - background.2) < 0.002)
+        }
+    }
+
     @Test func tokensDifferBetweenLightAndDark() {
         let lightBackground = resolved(Palette.backgroundPrimary, in: .light)
         let darkBackground = resolved(Palette.backgroundPrimary, in: .dark)

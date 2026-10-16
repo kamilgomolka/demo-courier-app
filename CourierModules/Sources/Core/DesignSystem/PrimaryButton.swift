@@ -2,6 +2,7 @@ public import SwiftUI
 
 public struct PrimaryButton: View {
     @Environment(\.colorScheme) private var colorScheme
+    @State private var feedbackTrigger = false
 
     public enum Role {
         case standard
@@ -26,7 +27,10 @@ public struct PrimaryButton: View {
     }
 
     public var body: some View {
-        Button(action: action) {
+        Button {
+            feedbackTrigger.toggle()
+            action()
+        } label: {
             Group {
                 if let systemImage {
                     Label(title, systemImage: systemImage)
@@ -38,10 +42,19 @@ public struct PrimaryButton: View {
             .foregroundStyle(colorScheme == .dark ? Color.black : Color.white)
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-        .buttonBorderShape(.roundedRectangle(radius: 16))
-        .tint(tint)
+        .buttonStyle(MintButtonStyle(colors: colors, glow: tint))
+        .sensoryFeedback(.impact(weight: .medium), trigger: feedbackTrigger)
+    }
+
+    private var colors: [Color] {
+        switch role {
+        case .standard:
+            colorScheme == .dark
+                ? [Palette.accent, Palette.mint]
+                : [Palette.mint, Color(red: 0, green: 122 / 255, blue: 80 / 255)]
+        case .success:
+            [Palette.success, Palette.success]
+        }
     }
 
     private var tint: Color {
@@ -49,6 +62,37 @@ public struct PrimaryButton: View {
         case .standard: Palette.accent
         case .success: Palette.success
         }
+    }
+}
+
+private struct MintButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.displayScale) private var displayScale
+
+    let colors: [Color]
+    let glow: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom),
+                in: RoundedRectangle(cornerRadius: 18)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [.white.opacity(0.2), .white.opacity(0.04)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 1 / displayScale
+                    )
+            }
+            .shadow(color: glow.opacity(isEnabled ? 0.3 : 0), radius: 14, x: 0, y: 7)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
     }
 }
 

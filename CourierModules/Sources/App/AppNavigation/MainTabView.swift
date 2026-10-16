@@ -38,6 +38,7 @@ struct MainTabView: View {
                 }
             }
         }
+        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         .tint(Palette.accent)
         .fullScreenCover(item: $router.presentedTask) { presentation in
             NavigationStack {
