@@ -9,7 +9,8 @@ extension RepositoryError {
         case .invalidTransition: .deliveryAlertInvalidTransition
         case .taskNotInActiveShift: .deliveryAlertTaskNotInActiveShift
         case .exceptionDetailsRequired: .deliveryAlertExceptionDetailsRequired
-        case .taskNotFound, .shiftHasTaskInTransit, .shiftNotActive, .invalidShiftTransition, .storageFailure:
+        case .taskNotFound, .shiftHasTaskInTransit, .shiftNotActive, .invalidShiftTransition, .resetReloadFailed,
+            .storageFailure:
             .deliveryAlertMessage
         }
     }

@@ -111,7 +111,7 @@ extension LocalStore {
         return .other(details: details.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
-    private func requireNoOtherTaskInTransit(besides id: TaskID) throws(RepositoryError) {
+    func requireNoOtherTaskInTransit(besides id: TaskID) throws(RepositoryError) {
         let otherInTransit = try fetch(DeliveryTaskRecord.self).contains { $0.status == .inTransit && $0.id != id }
         if otherInTransit {
             throw .anotherTaskInTransit

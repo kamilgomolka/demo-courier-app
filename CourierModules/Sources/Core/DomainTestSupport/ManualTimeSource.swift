@@ -28,6 +28,10 @@
             state.withLock { $0.sleepers.count }
         }
 
+        public var pendingDeadlines: [Date] {
+            state.withLock { $0.sleepers.values.map(\.deadline).sorted() }
+        }
+
         public func sleep(until deadline: Date) async throws {
             let sleeperID = UUID()
             try await withTaskCancellationHandler {

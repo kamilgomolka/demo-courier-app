@@ -22,7 +22,6 @@ struct TaskDetailsModelTests {
         TaskDetailsModel(
             taskID: "task-1",
             taskRepository: taskRepository,
-            timeSource: timeSource,
             onFinish: { finishRecorder.record() }
         )
     }
@@ -56,9 +55,8 @@ struct TaskDetailsModelTests {
 
         await model.startDelivery()
         await model.markDelivered()
-        await model.undoDelivery()
 
-        #expect(taskRepository.calls == [.startDelivery("task-1"), .markDelivered("task-1"), .undoDelivery("task-1")])
+        #expect(taskRepository.calls == [.startDelivery("task-1"), .markDelivered("task-1")])
         #expect(finishRecorder.count == 0)
     }
 
@@ -93,27 +91,11 @@ struct TaskDetailsModelTests {
         #expect(model.failure == .storageFailure("disk"))
     }
 
-    @Test func fallbackCommitsOnlyDeliveredTask() async {
-        let model = makeModel()
-        let run = await runModel(model, showing: .fixture(status: .inTransit))
-
-        await model.commitDeliveryIfNeeded()
-        #expect(taskRepository.calls.isEmpty)
-
-        taskRepository.send(.fixture(status: .delivered, completedAt: timeSource.now()), for: "task-1")
-        _ = await eventually { model.task?.status == .delivered }
-        await model.commitDeliveryIfNeeded()
-        #expect(taskRepository.calls == [.commitDelivery("task-1")])
-        #expect(finishRecorder.count == 1)
-        run.cancel()
-    }
-
     @Test func observedDeliveryReportsTaskAndFinishes() async {
         var reportedTasks: [DeliveryTask] = []
         let model = TaskDetailsModel(
             taskID: "task-1",
             taskRepository: taskRepository,
-            timeSource: timeSource,
             onDeliveryMarked: { reportedTasks.append($0) },
             onFinish: { finishRecorder.record() }
         )
@@ -124,54 +106,7 @@ struct TaskDetailsModelTests {
         _ = await eventually { finishRecorder.count == 1 }
 
         #expect(reportedTasks == [deliveredTask])
-        run.cancel()
-    }
-
-    @Test func undoDeadlineIsCompletionPlusUndoWindow() async {
-        let model = makeModel()
-        let completedAt = timeSource.now()
-        let run = await runModel(model, showing: .fixture(status: .delivered, completedAt: completedAt))
-
-        #expect(model.undoDeadline == completedAt.addingTimeInterval(SyncPolicy.undoWindow))
-        run.cancel()
-    }
-
-    @Test func expiredUndoWindowCommitsAndFinishes() async {
-        let model = makeModel()
-        let run = await runModel(model, showing: .fixture(status: .delivered, completedAt: timeSource.now()))
-
-        let expiry = Task { await model.finishWhenUndoWindowExpires() }
-        _ = await eventually { timeSource.pendingSleeperCount == 1 }
-        timeSource.advance(by: SyncPolicy.undoWindow)
-        await expiry.value
-
-        #expect(taskRepository.calls == [.commitDelivery("task-1")])
-        #expect(finishRecorder.count == 1)
-        run.cancel()
-    }
-
-    @Test func cancelledExpiryDoesNothing() async {
-        let model = makeModel()
-        let run = await runModel(model, showing: .fixture(status: .delivered, completedAt: timeSource.now()))
-
-        let expiry = Task { await model.finishWhenUndoWindowExpires() }
-        _ = await eventually { timeSource.pendingSleeperCount == 1 }
-        expiry.cancel()
-        await expiry.value
-
         #expect(taskRepository.calls.isEmpty)
-        #expect(finishRecorder.count == 0)
-        run.cancel()
-    }
-
-    @Test func expiryIsIgnoredWhenTaskIsNotDelivered() async {
-        let model = makeModel()
-        let run = await runModel(model, showing: .fixture(status: .inTransit))
-
-        await model.finishWhenUndoWindowExpires()
-
-        #expect(taskRepository.calls.isEmpty)
-        #expect(finishRecorder.count == 0)
         run.cancel()
     }
 
@@ -224,8 +159,9 @@ struct TaskDetailsModelTests {
         taskRepository.send(nil, for: "task-1")
         _ = await eventually { finishRecorder.count == 1 }
         taskRepository.send(.fixture(), for: "task-1")
+        #expect(await eventually { model.task != nil })
         taskRepository.send(nil, for: "task-1")
-        try? await Task.sleep(for: .milliseconds(50))
+        #expect(await eventually { model.task == nil })
 
         #expect(finishRecorder.count == 1)
         run.cancel()

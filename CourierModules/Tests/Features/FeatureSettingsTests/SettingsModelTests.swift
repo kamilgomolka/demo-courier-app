@@ -135,6 +135,16 @@ struct SettingsModelTests {
         #expect(model.resetFailure == nil)
     }
 
+    @Test func resetReloadFailurePreservesTheNetworkCause() async {
+        let model = makeModel()
+        syncController.resetFailure = .resetReloadFailed(.offline)
+
+        await model.resetLocalData()
+
+        #expect(model.resetFailure == .resetReloadFailed(.offline))
+        #expect(!model.isResetting)
+    }
+
     @Test func exposesObservedJobsAndStopsWhenCancelled() async {
         let model = makeModel()
         let job = SyncJob(

@@ -3,17 +3,15 @@ import Foundation
 public import SwiftData
 import os
 
-public actor LocalStore: ModelActor {
-    public nonisolated let modelContainer: ModelContainer
-    public nonisolated let modelExecutor: any ModelExecutor
+public actor LocalStore {
+    let modelContext: ModelContext
     let timeSource: any TimeSource
     var observers: [UUID: (isolated LocalStore) -> Bool] = [:]
 
     public init(modelContainer: ModelContainer, timeSource: any TimeSource = SystemTimeSource()) {
         let context = ModelContext(modelContainer)
         context.autosaveEnabled = false
-        self.modelContainer = modelContainer
-        self.modelExecutor = DefaultSerialModelExecutor(modelContext: context)
+        self.modelContext = context
         self.timeSource = timeSource
     }
 

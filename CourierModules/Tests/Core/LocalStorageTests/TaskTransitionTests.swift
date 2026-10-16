@@ -259,6 +259,48 @@ struct TaskTransitionTests {
         #expect(try await fixture.jobs().isEmpty)
     }
 
+    @Test func resolvingStatusConflictCannotCreateASecondTaskInTransit() async throws {
+        let fixture = try await StoreFixture.make()
+        try await fixture.store.startDelivery(id: "task-1")
+        let startJob = try #require(try await fixture.jobs().first)
+        try await fixture.store.markSynced(jobID: startJob.id)
+        fixture.timeSource.advance(by: 1)
+        try await fixture.store.markDelivered(id: "task-1")
+        let deliveredJob = try #require(try await fixture.jobs().first)
+        fixture.timeSource.advance(by: 1)
+        try await fixture.store.startDelivery(id: "task-2")
+        let jobsBeforeConflict = try await fixture.jobs()
+        var snapshot = StoreFixture.snapshot()
+        snapshot.tasks[0].status = .inTransit
+
+        await #expect(throws: RepositoryError.anotherTaskInTransit) {
+            try await fixture.store.resolveConflict(jobID: deliveredJob.id, serverSnapshot: snapshot)
+        }
+
+        #expect(try await fixture.task("task-1").status == .delivered)
+        #expect(try await fixture.task("task-2").status == .inTransit)
+        #expect(try await fixture.jobs() == jobsBeforeConflict)
+    }
+
+    @Test func resolvingStatusConflictRequiresActiveShiftForInTransit() async throws {
+        let fixture = try await StoreFixture.make()
+        try await fixture.store.startDelivery(id: "task-1")
+        let startJob = try #require(try await fixture.jobs().first)
+        try await fixture.store.markSynced(jobID: startJob.id)
+        try await fixture.store.markDelivered(id: "task-1")
+        let deliveredJob = try #require(try await fixture.jobs().first)
+        try await fixture.store.endShift()
+        var snapshot = StoreFixture.snapshot()
+        snapshot.tasks[0].status = .inTransit
+
+        await #expect(throws: RepositoryError.shiftNotActive) {
+            try await fixture.store.resolveConflict(jobID: deliveredJob.id, serverSnapshot: snapshot)
+        }
+
+        #expect(try await fixture.task("task-1").status == .delivered)
+        #expect(try await fixture.jobs() == [deliveredJob])
+    }
+
     @Test func resolvingReorderConflictAppliesServerOrderAndRemovesJob() async throws {
         let fixture = try await StoreFixture.make()
         try await fixture.store.reorderQueue(orderedTaskIDs: ["task-2", "task-1", "task-3", "task-4", "task-5"])

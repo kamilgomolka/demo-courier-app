@@ -33,7 +33,13 @@ extension LocalStore {
                     guard let serverTask = serverSnapshot.tasks.first(where: { $0.id == taskID }) else {
                         throw .taskNotFound
                     }
-                    try taskRecord(id: taskID).apply(serverTask)
+                    let record = try taskRecord(id: taskID)
+                    if serverTask.status == .inTransit {
+                        let shift = try activeShiftRecord()
+                        guard record.shiftID == shift.id else { throw .taskNotInActiveShift }
+                        try requireNoOtherTaskInTransit(besides: taskID)
+                    }
+                    try record.apply(serverTask)
                 case .reorder(let orderedTaskIDs):
                     let updates = try orderedTaskIDs.map { taskID throws(RepositoryError) in
                         guard let serverTask = serverSnapshot.tasks.first(where: { $0.id == taskID }) else {

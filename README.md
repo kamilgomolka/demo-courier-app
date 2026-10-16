@@ -12,7 +12,7 @@ An architecture playground for a courier's daily workflow (iPhone only): offline
 
 - **Offline-first with an outbox.** Every mutation is written to SwiftData and enqueues a `SyncJob` in the same transaction. The UI only ever reads local state.
 - **Single outbox consumer.** `SyncActor` wakes at the earliest `notBefore`, drains FIFO, sends each job at most once per cycle and uses the job id as `Idempotency-Key` (at-least-once delivery, idempotent server).
-- **Delayed commit with Undo.** "Mark Delivered" holds its sync job for 5 s (`SyncPolicy.undoWindow`). Undo removes the job; `Done`, expiry or leaving the screen release it.
+- **Delayed commit with Undo.** "Mark Delivered" holds its sync job for 5 s (`SyncPolicy.undoWindow`), closes the details screen and shows an app-wide Undo toast. Undo removes the job; expiry releases it even if the toast is no longer visible.
 - **Debounced reorder.** Drag-and-drop updates the queue optimistically; consecutive moves coalesce into one job whose deadline slides forward.
 - **Observation without `@Query`.** Features consume `AsyncStream`s from repository protocols and never see `@Model`.
 - **Network simulation.** Settings can force offline, latency range and failure type, show the outbox with attempts and last failure, reset local data, and trigger a manual sync.
@@ -94,8 +94,9 @@ Launching with `--ui-testing` uses an in-memory store and short mock latency.
 ## Tooling
 
 ```bash
-make check         # lint, build and package tests with terse output; the local quality gate
+make check         # lint, Debug/Release builds and package tests; the local quality gate
 make build         # build the app for the Simulator (warnings are errors)
+make build-release # build Release with the same strict warning policy
 make test          # package tests, then UI tests
 make test-package  # CourierModules unit tests only
 make test-module MODULE=SyncEngineTests  # one package test target

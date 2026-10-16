@@ -63,6 +63,29 @@ struct TaskQueueModelTests {
         run.cancel()
     }
 
+    @Test func failedReorderPreservesNewerQueueSnapshot() async {
+        let model = makeModel()
+        sendQueue()
+        let run = Task { await model.run() }
+        #expect(await eventually { model.upcomingTasks.count == 3 })
+        taskRepository.holdCalls()
+        taskRepository.failure = .invalidTransition
+        let move = Task { await model.moveUpcomingTasks(fromOffsets: IndexSet(integer: 0), toOffset: 3) }
+        #expect(await eventually { taskRepository.calls.count == 1 })
+
+        taskRepository.queue.send([
+            .fixture(id: "a", status: .inTransit), .fixture(id: "b", sortOrder: 2), .fixture(id: "c", sortOrder: 3),
+        ])
+        #expect(await eventually { model.taskInTransit?.id == "a" && model.upcomingTasks.count == 2 })
+        taskRepository.releaseCalls()
+        await move.value
+
+        #expect(model.upcomingTasks.map(\.id) == ["b", "c"])
+        #expect(model.taskInTransit?.id == "a")
+        #expect(model.failure == .invalidTransition)
+        run.cancel()
+    }
+
     @Test func moveToTheSamePositionDoesNotTouchTheRepository() async {
         let model = makeModel()
         sendQueue()

@@ -24,7 +24,7 @@ struct SyncPipelineTests {
         #expect(await eventually { await harness.pendingJobs().isEmpty })
 
         try await harness.store.markDelivered(id: "task-1")
-        try await Task.sleep(for: .milliseconds(50))
+        #expect(await eventually { harness.timeSource.pendingSleeperCount == 1 })
         #expect(harness.api.requests.count == 1)
 
         harness.timeSource.advance(by: SyncPolicy.undoWindow)
@@ -42,8 +42,9 @@ struct SyncPipelineTests {
         harness.timeSource.advance(by: 2)
 
         try await harness.store.undoDelivery(id: "task-1")
+        #expect(await eventually { harness.timeSource.pendingSleeperCount == 0 })
         harness.timeSource.advance(by: 20)
-        try await Task.sleep(for: .milliseconds(100))
+        await harness.syncActor.requestSync(.manual)
 
         #expect(harness.api.requests.count == 1)
     }
@@ -67,8 +68,9 @@ struct SyncPipelineTests {
         try await harness.store.reorderQueue(orderedTaskIDs: ["task-2", "task-1", "task-3", "task-4"])
         harness.timeSource.advance(by: 3)
         try await harness.store.reorderQueue(orderedTaskIDs: ["task-4", "task-2", "task-1", "task-3"])
+        let replacementDeadline = harness.timeSource.now().addingTimeInterval(SyncPolicy.reorderDebounce)
+        #expect(await eventually { harness.timeSource.pendingDeadlines == [replacementDeadline] })
         harness.timeSource.advance(by: 3)
-        try await Task.sleep(for: .milliseconds(50))
         #expect(harness.api.requests.isEmpty)
 
         harness.timeSource.advance(by: 2.1)
@@ -82,7 +84,7 @@ struct SyncPipelineTests {
         harness.conditions.save(NetworkConditions(isOffline: true))
         await harness.start()
         try await harness.store.startDelivery(id: "task-1")
-        try await Task.sleep(for: .milliseconds(50))
+        await harness.syncActor.requestSync(.manual)
         #expect(await harness.pendingJobs().count == 1)
 
         harness.conditions.save(NetworkConditions(latencyRange: 0...0))
@@ -120,11 +122,27 @@ struct SyncPipelineTests {
         async let first: Void = harness.syncActor.loadInitialData()
         async let second: Void = harness.syncActor.loadInitialData()
         #expect(await eventually { timeSource.pendingSleeperCount == 1 })
-        try await Task.sleep(for: .milliseconds(50))
         timeSource.advance(by: 1)
         _ = try await (first, second)
 
         #expect(harness.api.requests.count == 1)
+    }
+
+    @Test func failedReloadAfterResetIsReportedAndCanBeRetried() async throws {
+        let harness = try await StoreBackedHarness.inMemory()
+        harness.conditions.save(NetworkConditions(isOffline: true))
+        await #expect(throws: RepositoryError.resetReloadFailed(.offline)) {
+            try await harness.syncActor.resetLocalData()
+        }
+
+        #expect(await harness.pendingJobs().isEmpty)
+        var iterator = harness.store.observeShiftSummary().makeAsyncIterator()
+        #expect(await iterator.next() == .some(nil))
+        harness.conditions.save(NetworkConditions(latencyRange: 0...0))
+        try await harness.syncActor.resetLocalData()
+        var queue = harness.store.observeQueue().makeAsyncIterator()
+        #expect(await queue.next()?.count == 12)
+        await harness.syncActor.stop()
     }
 
     @Test func initialLoadFailureIsReportedAndLeavesTheStoreEmpty() async throws {

@@ -32,6 +32,9 @@ jobs:
       - name: Build and test
         run: make test
 
+      - name: Build Release
+        run: make build-release
+
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v7

@@ -1,6 +1,7 @@
 import Domain
 import DomainTestSupport
 import Foundation
+import LocalStorage
 import Synchronization
 import Testing
 
@@ -9,7 +10,11 @@ import Testing
 struct SyncRecoveryTests {
     private final class NewerServerAPI: CourierAPI {
         let sendCount = Mutex(0)
-        let snapshot = RemoteSnapshot.fixture()
+        let snapshot: RemoteSnapshot
+
+        init(snapshot: RemoteSnapshot = .fixture()) {
+            self.snapshot = snapshot
+        }
 
         func fetchSnapshot() async throws(SyncError) -> RemoteSnapshot {
             snapshot
@@ -19,6 +24,32 @@ struct SyncRecoveryTests {
             sendCount.withLock { $0 += 1 }
             throw .conflict(serverUpdatedAt: job.createdAt.addingTimeInterval(1))
         }
+    }
+
+    @Test func rejectedServerWinnerKeepsTheJobWithFailureDiagnostics() async throws {
+        let harness = try await StoreBackedHarness.inMemory()
+        try await harness.store.startDelivery(id: "task-1")
+        let startJob = try #require(await harness.pendingJobs().first)
+        try await harness.store.markSynced(jobID: startJob.id)
+        harness.timeSource.advance(by: 1)
+        try await harness.store.markDelivered(id: "task-1")
+        let deliveredJob = try #require(await harness.pendingJobs().first)
+        harness.timeSource.advance(by: SyncPolicy.undoWindow)
+        try await harness.store.startDelivery(id: "task-2")
+        var snapshot = sampleSnapshot()
+        snapshot.tasks[0].status = .inTransit
+        let api = NewerServerAPI(snapshot: snapshot)
+        let syncActor = SyncActor(
+            jobRepository: harness.store, localDataResetter: harness.store, api: api,
+            sessionRefresher: MockSessionRefresher(conditionsStore: harness.conditions), timeSource: harness.timeSource
+        )
+
+        await syncActor.requestSync(.manual)
+
+        let retainedJob = try #require(await harness.pendingJobs().first { $0.id == deliveredJob.id })
+        #expect(retainedJob.attemptCount == 1)
+        #expect(retainedJob.lastFailure == "anotherTaskInTransit")
+        #expect(api.sendCount.withLock { $0 } == 1)
     }
 
     @Test func unauthorizedRefreshesSessionAndRetriesWithoutCountingAnAttempt() async throws {

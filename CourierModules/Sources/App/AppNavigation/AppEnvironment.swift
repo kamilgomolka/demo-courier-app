@@ -20,19 +20,19 @@ final class AppEnvironment {
         self.networkConditionsStore = networkConditionsStore
     }
 
-    static func makeLive(arguments: [String] = ProcessInfo.processInfo.arguments) -> AppEnvironment? {
+    static func makeLive(arguments: [String] = ProcessInfo.processInfo.arguments) async -> AppEnvironment? {
         #if DEBUG
             let isUITesting = arguments.contains(uiTestingArgument)
-        #else
-            let isUITesting = false
-        #endif
-        do {
-            let container = try CourierStorage.makeContainer(isStoredInMemoryOnly: isUITesting)
-            let store = LocalStore(modelContainer: container)
             let conditionsStore = UserDefaultsNetworkConditionsStore(suiteName: isUITesting ? uiTestingSuiteName : nil)
             if isUITesting {
                 conditionsStore.save(NetworkConditions(latencyRange: 0.1...0.3))
             }
+        #else
+            let isUITesting = false
+            let conditionsStore = UserDefaultsNetworkConditionsStore()
+        #endif
+        do {
+            let store = try await CourierStorage.makeStore(isStoredInMemoryOnly: isUITesting)
             let api = MockCourierAPI(conditionsStore: conditionsStore)
             let syncActor = SyncActor(
                 jobRepository: store,

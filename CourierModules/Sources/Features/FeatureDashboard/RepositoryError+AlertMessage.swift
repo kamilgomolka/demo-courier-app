@@ -8,7 +8,7 @@ extension RepositoryError {
         case .shiftNotActive: .dashboardAlertShiftNotActive
         case .taskNotInActiveShift: .dashboardAlertTaskNotInActiveShift
         case .invalidTransition, .anotherTaskInTransit, .taskNotFound, .undoWindowClosed,
-            .exceptionDetailsRequired, .invalidShiftTransition, .storageFailure:
+            .exceptionDetailsRequired, .invalidShiftTransition, .resetReloadFailed, .storageFailure:
             .dashboardAlertMessage
         }
     }

@@ -10,6 +10,7 @@ public enum RepositoryError: Error, Equatable, Sendable {
     case shiftNotActive
     case taskNotInActiveShift
     case invalidShiftTransition
+    case resetReloadFailed(SyncError)
     case storageFailure(String)
 }
 

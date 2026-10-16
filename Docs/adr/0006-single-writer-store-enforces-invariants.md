@@ -14,4 +14,5 @@ Cross-entity rules (one `inTransit` task, active shift, shift membership) must h
 
 - UI disabling (inactive shift rows, disabled End Shift) is presentation only.
 - New mutations add their invariant checks and outbox effects to `LocalStore` in the same transaction.
+- Server-winning status conflicts also validate active shift, shift membership and the single `inTransit` task before applying the server state. A rejected reconciliation leaves the local task and its job unchanged.
 - SwiftData uses `VersionedSchema` v1 without a migration plan; a schema change needs a new ADR.

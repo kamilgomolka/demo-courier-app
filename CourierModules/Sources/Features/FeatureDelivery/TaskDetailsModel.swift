@@ -1,5 +1,4 @@
 import Domain
-import Foundation
 import Observation
 
 @Observable
@@ -10,7 +9,6 @@ final class TaskDetailsModel {
 
     @ObservationIgnored private let taskID: TaskID
     @ObservationIgnored private let taskRepository: any TaskRepository
-    @ObservationIgnored private let timeSource: any TimeSource
     @ObservationIgnored private let onFinish: () -> Void
     @ObservationIgnored private let onDeliveryMarked: (DeliveryTask) -> Void
     @ObservationIgnored private var isFinished = false
@@ -19,20 +17,13 @@ final class TaskDetailsModel {
     init(
         taskID: TaskID,
         taskRepository: any TaskRepository,
-        timeSource: any TimeSource = SystemTimeSource(),
         onDeliveryMarked: @escaping (DeliveryTask) -> Void = { _ in },
         onFinish: @escaping () -> Void
     ) {
         self.taskID = taskID
         self.taskRepository = taskRepository
-        self.timeSource = timeSource
         self.onDeliveryMarked = onDeliveryMarked
         self.onFinish = onFinish
-    }
-
-    var undoDeadline: Date? {
-        guard task?.status == .delivered, let completedAt = task?.completedAt else { return nil }
-        return completedAt.addingTimeInterval(SyncPolicy.undoWindow)
     }
 
     func run() async {
@@ -63,11 +54,6 @@ final class TaskDetailsModel {
         }
     }
 
-    func undoDelivery() async {
-        await perform { () async throws(RepositoryError) in try await self.taskRepository.undoDelivery(id: self.taskID)
-        }
-    }
-
     func reportException(_ reason: ExceptionReason) async {
         let isReported = await perform { () async throws(RepositoryError) in
             try await self.taskRepository.reportException(id: self.taskID, reason: reason)
@@ -78,24 +64,12 @@ final class TaskDetailsModel {
     }
 
     func completeDelivery() async {
-        if await commitDelivery() {
+        let isCommitted = await perform { () async throws(RepositoryError) in
+            try await self.taskRepository.commitDelivery(id: self.taskID)
+        }
+        if isCommitted {
             finish()
         }
-    }
-
-    func commitDeliveryIfNeeded() async {
-        guard task?.status == .delivered else { return }
-        await commitDelivery()
-    }
-
-    func finishWhenUndoWindowExpires() async {
-        guard let undoDeadline else { return }
-        do {
-            try await timeSource.sleep(until: undoDeadline)
-        } catch {
-            return
-        }
-        await completeDelivery()
     }
 
     func dismissFailure() {
@@ -104,13 +78,6 @@ final class TaskDetailsModel {
 
     func close() {
         finish()
-    }
-
-    @discardableResult
-    private func commitDelivery() async -> Bool {
-        await perform { () async throws(RepositoryError) in
-            try await self.taskRepository.commitDelivery(id: self.taskID)
-        }
     }
 
     @discardableResult

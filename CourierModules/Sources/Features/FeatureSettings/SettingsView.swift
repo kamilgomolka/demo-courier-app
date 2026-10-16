@@ -44,7 +44,11 @@ public struct SettingsView: View {
         ) {
             Button(String(localized: .settingsResetFailureDismissButton)) {}
         } message: {
-            Text(.settingsResetFailureMessage)
+            if case .resetReloadFailed? = model.resetFailure {
+                Text(.settingsResetReloadFailureMessage)
+            } else {
+                Text(.settingsResetFailureMessage)
+            }
         }
     }
 

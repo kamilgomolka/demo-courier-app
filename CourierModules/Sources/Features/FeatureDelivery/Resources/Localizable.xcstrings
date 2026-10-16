@@ -232,28 +232,6 @@
         }
       }
     },
-    "delivery.details.undoButton": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Undo"
-          }
-        }
-      }
-    },
-    "delivery.details.undoCountdownLabel": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Undo available"
-          }
-        }
-      }
-    },
     "delivery.exception.addressNotFound": {
       "extractionState": "manual",
       "localizations": {

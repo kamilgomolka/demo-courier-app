@@ -32,7 +32,7 @@ public struct RootView: View {
         }
         .task {
             guard environment == nil, !didFailToStart else { return }
-            environment = AppEnvironment.makeLive()
+            environment = await AppEnvironment.makeLive()
             didFailToStart = environment == nil
         }
     }

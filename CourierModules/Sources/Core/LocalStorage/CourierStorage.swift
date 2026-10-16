@@ -3,6 +3,14 @@ public import Foundation
 public import SwiftData
 
 public enum CourierStorage {
+    @concurrent public static func makeStore(
+        isStoredInMemoryOnly: Bool,
+        timeSource: any TimeSource = SystemTimeSource()
+    ) async throws(RepositoryError) -> LocalStore {
+        let container = try makeContainer(isStoredInMemoryOnly: isStoredInMemoryOnly)
+        return LocalStore(modelContainer: container, timeSource: timeSource)
+    }
+
     public static func makeContainer(isStoredInMemoryOnly: Bool) throws(RepositoryError) -> ModelContainer {
         let schema = Schema(versionedSchema: CourierSchemaV1.self)
         let configuration =

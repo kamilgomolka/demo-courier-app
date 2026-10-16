@@ -31,7 +31,7 @@ final class CourierAppUITests: XCTestCase {
         XCTAssertTrue(markDeliveredButton.waitForExistence(timeout: 5.0))
         markDeliveredButton.tap()
 
-        let undoButton = app.buttons["delivery.undoButton"]
+        let undoButton = app.buttons["delivery.undoToast.undoButton"]
         XCTAssertTrue(undoButton.waitForExistence(timeout: 5.0))
         undoButton.tap()
 
@@ -93,7 +93,7 @@ final class CourierAppUITests: XCTestCase {
         app.buttons["dashboard.endShiftButton"].tap()
 
         XCTAssertTrue(app.buttons["dashboard.endShiftConfirmButton"].waitForExistence(timeout: 5.0))
-        app.buttons["dashboard.endShiftConfirmButton"].tap()
+        app.buttons["dashboard.endShiftConfirmButton"].firstMatch.tap()
         XCTAssertTrue(app.buttons["dashboard.reopenShiftButton"].waitForExistence(timeout: 5.0))
 
         app.buttons["dashboard.reopenShiftButton"].tap()

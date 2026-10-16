@@ -1,11 +1,55 @@
 import Domain
 import DomainTestSupport
 import Foundation
+import Synchronization
 import Testing
 
 @testable import SyncEngine
 
 struct SyncSchedulingTests {
+    @Test func replacingUnsentReorderDuringDrainDoesNotSendTheRemovedJob() async throws {
+        let repository = FakeSyncJobRepository()
+        let conditions = FakeNetworkConditionsStore()
+        let timeSource = ManualTimeSource()
+        let latencyCalls = Mutex(0)
+        let api = MockCourierAPI(
+            conditionsStore: conditions,
+            timeSource: timeSource,
+            latency: { _ in
+                latencyCalls.withLock { count in
+                    defer { count += 1 }
+                    return count == 0 ? 1 : 0
+                }
+            }
+        )
+        let syncActor = SyncActor(
+            jobRepository: repository, localDataResetter: repository, api: api,
+            sessionRefresher: MockSessionRefresher(conditionsStore: conditions), timeSource: timeSource
+        )
+        let now = timeSource.now()
+        let first = SyncJob(
+            kind: .updateStatus(taskID: "a", status: .inTransit, exceptionReason: nil),
+            createdAt: now.addingTimeInterval(-1), notBefore: now
+        )
+        let obsolete = SyncJob(kind: .reorder(orderedTaskIDs: ["b", "c"]), createdAt: now, notBefore: now)
+        repository.add(first)
+        repository.add(obsolete)
+        let drain = Task { await syncActor.requestSync(.manual) }
+        #expect(await eventually { timeSource.pendingSleeperCount == 1 })
+
+        repository.remove(jobID: obsolete.id)
+        let replacement = SyncJob(
+            kind: .reorder(orderedTaskIDs: ["c", "b"]), createdAt: now,
+            notBefore: now.addingTimeInterval(SyncPolicy.reorderDebounce)
+        )
+        repository.add(replacement)
+        timeSource.advance(by: 1)
+        await drain.value
+
+        #expect(api.requests.map(\.idempotencyKey) == [first.id])
+        #expect(repository.jobs.current == [replacement])
+    }
+
     @Test func noRequestBeforeNotBeforeAndExactlyOneAfter() async throws {
         let harness = FakeSyncHarness()
         harness.repository.add(harness.makeJob(notBeforeOffset: 5))
@@ -13,13 +57,12 @@ struct SyncSchedulingTests {
         #expect(await eventually { harness.timeSource.pendingSleeperCount == 1 })
 
         harness.timeSource.advance(by: 4.9)
-        try await Task.sleep(for: .milliseconds(50))
         #expect(harness.api.requests.isEmpty)
 
         harness.timeSource.advance(by: 0.2)
         #expect(await eventually { harness.api.requests.count == 1 })
         #expect(await eventually { harness.repository.jobs.current.isEmpty })
-        try await Task.sleep(for: .milliseconds(50))
+        await harness.syncActor.stop()
         #expect(harness.api.requests.count == 1)
     }
 
@@ -34,7 +77,7 @@ struct SyncSchedulingTests {
 
         #expect(await eventually { harness.timeSource.pendingSleeperCount == 0 })
         harness.timeSource.advance(by: 10)
-        try await Task.sleep(for: .milliseconds(50))
+        await harness.syncActor.stop()
         #expect(harness.api.requests.isEmpty)
     }
 
@@ -48,14 +91,15 @@ struct SyncSchedulingTests {
 
         harness.repository.remove(jobID: original.id)
         harness.repository.add(harness.makeJob(notBeforeOffset: 5))
-        #expect(await eventually { harness.timeSource.pendingSleeperCount == 1 })
+        let replacementDeadline = harness.timeSource.now().addingTimeInterval(5)
+        #expect(await eventually { harness.timeSource.pendingDeadlines == [replacementDeadline] })
 
         harness.timeSource.advance(by: 4)
-        try await Task.sleep(for: .milliseconds(50))
         #expect(harness.api.requests.isEmpty)
 
         harness.timeSource.advance(by: 1.1)
         #expect(await eventually { harness.api.requests.count == 1 })
+        await harness.syncActor.stop()
     }
 
     @Test func replacingJobWhileWakeFiresLeavesExactlyOneSleeperAndNoneAfterStop() async throws {
@@ -70,8 +114,6 @@ struct SyncSchedulingTests {
 
         #expect(await eventually { harness.api.requests.count == 1 })
         #expect(await eventually { harness.timeSource.pendingSleeperCount == 1 })
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(harness.timeSource.pendingSleeperCount == 1)
 
         await harness.syncActor.stop()
 
@@ -112,8 +154,7 @@ struct SyncSchedulingTests {
         harness.conditions.save(NetworkConditions(latencyRange: 0...0, simulatedFailure: .serverError))
         harness.repository.add(harness.makeJob())
         await harness.start()
-        #expect(await eventually { harness.api.requests.count == 1 })
-        try await Task.sleep(for: .milliseconds(100))
+        #expect(await eventually { harness.repository.jobs.current.first?.attemptCount == 1 })
         #expect(harness.api.requests.count == 1)
         #expect(harness.repository.jobs.current.first?.attemptCount == 1)
         #expect(harness.repository.jobs.current.first?.lastFailure == "Server error 500")
@@ -122,11 +163,11 @@ struct SyncSchedulingTests {
 
         #expect(harness.api.requests.count == 2)
         #expect(harness.repository.jobs.current.first?.attemptCount == 2)
-        try await Task.sleep(for: .milliseconds(100))
+        await harness.syncActor.stop()
         #expect(harness.api.requests.count == 2)
     }
 
-    @Test func failedJobsAreNotRetriedByUnrelatedQueueChanges() async throws {
+    @Test func failedJobsAreNotRetriedByQueueChangesOrWakeTimers() async throws {
         let harness = FakeSyncHarness()
         harness.conditions.save(NetworkConditions(latencyRange: 0...0, simulatedFailure: .serverError))
         harness.repository.add(harness.makeJob(taskID: "failing"))
@@ -135,9 +176,15 @@ struct SyncSchedulingTests {
 
         #expect(await eventually { harness.repository.jobs.current.first?.attemptCount == 1 })
         harness.repository.add(harness.makeJob(taskID: "held", notBeforeOffset: 60))
-        try await Task.sleep(for: .milliseconds(100))
+        #expect(await eventually { harness.timeSource.pendingSleeperCount == 1 })
 
         #expect(harness.api.requests.count == 1)
+        harness.conditions.save(NetworkConditions(latencyRange: 0...0))
+        harness.timeSource.advance(by: 60)
+        #expect(await eventually { harness.repository.jobs.current.count == 1 })
+        #expect(harness.api.requests.map(\.path) == ["/tasks/failing/status", "/tasks/held/status"])
+        #expect(harness.repository.jobs.current.first?.attemptCount == 1)
+        await harness.syncActor.stop()
     }
 
     @Test func failedJobDoesNotBlockOtherTasksButBlocksItsOwnTask() async throws {
@@ -152,7 +199,6 @@ struct SyncSchedulingTests {
         harness.repository.add(harness.makeJob(taskID: "a", status: .delivered, createdOffset: -1))
 
         #expect(await eventually { harness.repository.jobs.current.count == 2 })
-        try await Task.sleep(for: .milliseconds(100))
         #expect(harness.api.requests.map(\.path) == ["/tasks/a/status", "/tasks/b/status"])
         #expect(harness.repository.jobs.current.allSatisfy { $0.kind.taskID == "a" })
 
@@ -190,7 +236,6 @@ struct SyncSchedulingTests {
         let reset = Task { try await harness.syncActor.resetLocalData() }
         #expect(await eventually { harness.repository.resetCount == 1 })
         #expect(await eventually { harness.timeSource.pendingSleeperCount == 1 })
-        try await Task.sleep(for: .milliseconds(50))
         harness.timeSource.advance(by: 1)
         try await reset.value
 

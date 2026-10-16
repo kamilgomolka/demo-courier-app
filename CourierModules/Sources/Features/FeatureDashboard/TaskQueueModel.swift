@@ -9,6 +9,7 @@ final class TaskQueueModel {
     private(set) var failure: RepositoryError?
 
     @ObservationIgnored private let taskRepository: any TaskRepository
+    @ObservationIgnored private var latestQueue: [DeliveryTask] = []
 
     init(taskRepository: any TaskRepository) {
         self.taskRepository = taskRepository
@@ -29,7 +30,7 @@ final class TaskQueueModel {
         do {
             try await taskRepository.reorderQueue(orderedTaskIDs: reordered.map(\.id))
         } catch {
-            upcomingTasks = previousOrder
+            apply(latestQueue)
             failure = error
         }
     }
@@ -47,6 +48,7 @@ final class TaskQueueModel {
     }
 
     private func apply(_ queue: [DeliveryTask]) {
+        latestQueue = queue
         let updatedTaskInTransit = queue.first { $0.status == .inTransit }
         let updatedUpcomingTasks = queue.filter { $0.status == .new }
         if taskInTransit != updatedTaskInTransit {

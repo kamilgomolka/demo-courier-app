@@ -221,6 +221,17 @@
         }
       }
     },
+    "settings.reset.reloadFailureMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local data was cleared, but the sample data couldn't be loaded. Check the simulation settings and try resetting again."
+          }
+        }
+      }
+    },
     "settings.resetButton": {
       "extractionState": "manual",
       "localizations": {

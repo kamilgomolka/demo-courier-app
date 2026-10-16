@@ -10,6 +10,8 @@ The app must work offline and survive a crash between a successful remote call a
 
 Every mutation enqueues a `SyncJob` in the same SwiftData transaction. `SyncActor` is the only consumer. Each job is sent at most once per drain and carries its `id` as `Idempotency-Key`. Server PATCH operations are absolute (target status, complete order), so replays are safe. A `reorder` job gets a fresh `id` when replaced. Retrying failed jobs happens only on external triggers; queue updates and wake timers never retry them. The scheduler fingerprint is `(id, kind, notBefore)`, excluding `attemptCount` and `lastFailure`, so diagnostics cannot cause retry loops.
 
+Before choosing each next job, the drain reads the current eligible outbox and excludes job IDs already considered in that pass. Replaced jobs that have not started sending are skipped; a request already in flight keeps its original immutable payload. A rejected local acknowledgement or reconciliation records failure diagnostics and retains the job for a later trigger.
+
 ## Consequences
 
 - `markSynced` on a deleted job is a no-op.

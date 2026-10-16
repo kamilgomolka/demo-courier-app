@@ -174,16 +174,20 @@ public actor SyncActor: SyncControlling {
     }
 
     private func drainOnce(retryingFailedJobs: Bool) async {
-        let jobs: [SyncJob]
-        do {
-            jobs = try await jobRepository.eligibleJobs(at: timeSource.now())
-        } catch {
-            Log.sync.error("Failed to read outbox: \(String(describing: error), privacy: .public)")
-            return
-        }
+        var attemptedJobIDs: Set<UUID> = []
         var blockedTaskIDs: Set<TaskID> = []
-        for job in jobs {
+        while !Task.isCancelled {
+            let job: SyncJob
+            do {
+                let jobs = try await jobRepository.eligibleJobs(at: timeSource.now())
+                guard let nextJob = jobs.first(where: { !attemptedJobIDs.contains($0.id) }) else { return }
+                job = nextJob
+            } catch {
+                Log.sync.error("Failed to read outbox: \(String(describing: error), privacy: .public)")
+                return
+            }
             guard !Task.isCancelled else { return }
+            attemptedJobIDs.insert(job.id)
             let taskID = job.kind.taskID
             if let taskID, blockedTaskIDs.contains(taskID) { continue }
             if job.attemptCount > 0 && !retryingFailedJobs {
@@ -211,6 +215,11 @@ public actor SyncActor: SyncControlling {
                 Log.sync.error(
                     "Failed to acknowledge job \(job.id, privacy: .public): \(String(describing: error), privacy: .public)"
                 )
+                do {
+                    try await jobRepository.recordFailure(jobID: job.id, failure: String(describing: error))
+                } catch {
+                    Log.sync.error("Failed to record failure: \(String(describing: error), privacy: .public)")
+                }
                 return
             }
         }
@@ -319,6 +328,7 @@ public actor SyncActor: SyncControlling {
             try await runInitialLoad()
         } catch {
             Log.sync.error("Reload after reset failed: \(error.description, privacy: .public)")
+            return .resetReloadFailed(error)
         }
         return nil
     }

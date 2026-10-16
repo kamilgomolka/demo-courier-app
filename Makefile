@@ -17,14 +17,18 @@ package_test = cd $(PACKAGE_DIRECTORY) && xcodebuild test -scheme $(PACKAGE_SCHE
 	|| { $(SUMMARIZE_FAILURES) $(PACKAGE_RESULT_BUNDLE) \
 	| jq -c '{failedTests, passedTests, testFailures: [.testFailures[] | {testIdentifierString, failureText}]}'; exit 1; }
 
-.PHONY: build check test test-package test-module test-app destinations format lint clean
+.PHONY: build build-release check test test-package test-module test-app destinations format lint clean
 
 build:
 	xcodebuild build -project $(PROJECT) -scheme $(SCHEME) \
 		-destination '$(DESTINATION)' $(XCODEBUILD_QUIET) CODE_SIGNING_ALLOWED=NO $(STRICT_WARNINGS)
 
+build-release:
+	xcodebuild build -project $(PROJECT) -scheme $(SCHEME) -configuration Release \
+		-destination '$(DESTINATION)' $(XCODEBUILD_QUIET) CODE_SIGNING_ALLOWED=NO $(STRICT_WARNINGS)
+
 check:
-	$(MAKE) XCODEBUILD_QUIET=-quiet lint build test-package
+	$(MAKE) XCODEBUILD_QUIET=-quiet lint build build-release test-package
 
 test: test-package test-app
 

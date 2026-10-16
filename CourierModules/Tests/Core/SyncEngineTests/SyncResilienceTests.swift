@@ -114,8 +114,7 @@ struct SyncResilienceTests {
             #expect(await eventually { timeSource.pendingSleeperCount == 1 })
 
             let reset = Task { try await harness.syncActor.resetLocalData() }
-            #expect(await eventually { timeSource.pendingSleeperCount == 1 })
-            try await Task.sleep(for: .milliseconds(100))
+            #expect(await eventually { await harness.pendingJobs().isEmpty && timeSource.pendingSleeperCount == 1 })
             timeSource.advance(by: 1)
             try await reset.value
 

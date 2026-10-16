@@ -38,7 +38,6 @@ public struct TaskDetailsView: View {
                 }
             }
             .task { await model.run() }
-            .task(id: model.undoDeadline) { await model.finishWhenUndoWindowExpires() }
             .sensoryFeedback(.success, trigger: model.task?.status) { previous, current in
                 previous == .inTransit && current == .delivered
             }
