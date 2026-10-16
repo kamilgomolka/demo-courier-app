@@ -62,8 +62,10 @@ private struct HistoryRowView: View {
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary)
                 if task.syncState == .pending {
-                    StatusBadge(.historyBadgePendingSync, systemImage: "arrow.triangle.2.circlepath", tint: Palette.warning)
-                        .symbolEffect(.rotate, options: .repeating)
+                    StatusBadge(
+                        .historyBadgePendingSync, systemImage: "arrow.triangle.2.circlepath", tint: Palette.warning
+                    )
+                    .symbolEffect(.rotate, options: .repeating)
                 }
             }
         }

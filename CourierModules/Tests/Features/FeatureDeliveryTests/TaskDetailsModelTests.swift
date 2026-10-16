@@ -104,7 +104,26 @@ struct TaskDetailsModelTests {
         _ = await eventually { model.task?.status == .delivered }
         await model.commitDeliveryIfNeeded()
         #expect(taskRepository.calls == [.commitDelivery("task-1")])
-        #expect(finishRecorder.count == 0)
+        #expect(finishRecorder.count == 1)
+        run.cancel()
+    }
+
+    @Test func observedDeliveryReportsTaskAndFinishes() async {
+        var reportedTasks: [DeliveryTask] = []
+        let model = TaskDetailsModel(
+            taskID: "task-1",
+            taskRepository: taskRepository,
+            timeSource: timeSource,
+            onDeliveryMarked: { reportedTasks.append($0) },
+            onFinish: { finishRecorder.record() }
+        )
+        let run = await runModel(model, showing: .fixture(status: .inTransit))
+        let deliveredTask = DeliveryTask.fixture(status: .delivered, completedAt: timeSource.now())
+
+        taskRepository.send(deliveredTask, for: "task-1")
+        _ = await eventually { finishRecorder.count == 1 }
+
+        #expect(reportedTasks == [deliveredTask])
         run.cancel()
     }
 

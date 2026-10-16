@@ -1,0 +1,15 @@
+---
+description: Conventions for package unit tests and host UI tests
+globs: CourierModules/Tests/**,CourierAppUITests/**,CourierModules/Sources/Core/DomainTestSupport/**
+alwaysApply: false
+---
+
+- Package tests use Swift Testing (`@Test`, `#expect`, `try #require`). No force unwrap; use `try #require`.
+- Test through public behavior. Use fakes from `DomainTestSupport`; do not mock internals.
+- No `sleep`. Drive time with `ManualTimeSource`; await asynchronous outcomes with `Eventually`.
+- Disk-backed stores use temporary files and release containers before deleting them.
+- Isolate `UserDefaults` with ephemeral suites cleared in teardown.
+- Test targets mirror `Sources/{Core,Features}`; a `Feature*Tests` target never imports `LocalStorage`.
+- Host UI tests are XCTest, black-box, driven by accessibility identifiers, launched with `--ui-testing`.
+- One behavior per test, named for the behavior. Write the failing test before the change.
+- Run one target with `make test-module MODULE=<TestTarget>`.

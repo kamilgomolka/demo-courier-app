@@ -1,0 +1,15 @@
+---
+description: Conventions for Domain, LocalStorage and SyncEngine
+globs: CourierModules/Sources/Core/Domain/**,CourierModules/Sources/Core/LocalStorage/**,CourierModules/Sources/Core/SyncEngine/**
+alwaysApply: false
+---
+
+- These modules are `nonisolated` by default. Shared mutable state lives in actors (`LocalStore`, `SyncActor`).
+- `Domain` imports nothing from the other modules. Domain types are `Sendable` structs and enums; repository protocols are `Sendable`.
+- `@Model` records stay `internal` to `LocalStorage` and are mapped to domain structs at the boundary.
+- Errors are typed throws with the domain enums `RepositoryError` and `SyncError`; never swallow.
+- Mutations and their `SyncJob` are written in one transaction. Invariants are checked inside it.
+- Time comes from `TimeSource`, never `Date()` or `Task.sleep` directly.
+- Honor cancellation in every loop and sleep; a cancelled drain logs nothing.
+- Log through the module's `Log` with `privacy: .public` for identifiers and statuses.
+- See `Docs/adr/0001`, `0004` and `0006` before changing observation, sync or invariants.

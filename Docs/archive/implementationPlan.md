@@ -1,5 +1,7 @@
 # CourierApp: Implementation Plan
 
+Archived: historical record, no longer maintained. The current source of truth is `CONTEXT.md` and `Docs/adr/`.
+
 Status: Phases 0 through 8 implemented, except for the manual E2E checklist from Phase 8. Quality gate (`make lint`, `make build`, `make test`) green on Xcode 26.6, iPhone 17 Pro, iOS 26.5. Unverified: UI visual polish, drag-and-drop smoothness, Xcode path on CI runner.
 
 Environment: Xcode 26.6 (Swift 6.3.3), iPhone 17 Pro, iOS 26.5. Build commands executed with `DEVELOPER_DIR=/Applications/Xcode_26_6.app/Contents/Developer` because `xcode-select` had previously switched unexpectedly to 27.1.

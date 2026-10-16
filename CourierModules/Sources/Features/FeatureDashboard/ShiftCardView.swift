@@ -16,7 +16,10 @@ struct ShiftCardView: View {
                     ZStack(alignment: .leading) {
                         Capsule().fill(Palette.textSecondary.opacity(0.14))
                         Capsule()
-                            .fill(LinearGradient(colors: [Palette.accent, Color.cyan], startPoint: .leading, endPoint: .trailing))
+                            .fill(
+                                LinearGradient(
+                                    colors: [Palette.accent, Color.cyan], startPoint: .leading, endPoint: .trailing)
+                            )
                             .frame(width: geometry.size.width * min(max(summary.progress, 0), 1))
                     }
                 }

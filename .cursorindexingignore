@@ -1,0 +1,3 @@
+*.xcresult
+.build/
+DerivedData/

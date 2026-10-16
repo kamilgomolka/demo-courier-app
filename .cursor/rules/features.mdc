@@ -1,0 +1,14 @@
+---
+description: Conventions for Feature modules and AppNavigation
+globs: CourierModules/Sources/Features/**,CourierModules/Sources/App/**,CourierModules/Sources/Core/DesignSystem/**
+alwaysApply: false
+---
+
+- `MainActor` is the default isolation. UI models are `@Observable` and assign state only when a snapshot differs.
+- Consume repository `AsyncStream`s from `Domain`; never import `LocalStorage` or `SyncEngine` outside `AppNavigation`.
+- Features never import each other. Report intent through closures (`onSelectTask`, `onFinish`); `AppNavigation` owns paths and builds destinations.
+- Feature UI models own no sync timers. The Undo toast timer lives in `AppNavigation` and ends in the idempotent `commitDelivery`.
+- Strings go through the module's `Localizable.xcstrings` with `<screen>.<element>.<role>` keys and generated symbols; no raw literals in views.
+- Expose accessibility identifiers for UI tests in the module's `*Accessibility.swift`.
+- `DesignSystem` components take `LocalizedStringResource`, contain no business logic, and document public API with DocC.
+- See `Docs/adr/0001`, `0003` and `0005`.

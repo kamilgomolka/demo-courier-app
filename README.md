@@ -6,7 +6,7 @@
 [![Xcode](https://img.shields.io/badge/Xcode-26.6-1575F9.svg)](https://developer.apple.com/xcode/)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
 
-An architecture playground for a courier's daily workflow (iPhone only): offline-first, optimistic UI, outbox-based sync, micro-modules in a local Swift package, Swift 6 strict concurrency. Features are kept to the minimum needed to exercise those mechanisms; the planning document is in [`Docs/implementationPlan.md`](Docs/implementationPlan.md).
+An architecture playground for a courier's daily workflow (iPhone only): offline-first, optimistic UI, outbox-based sync, micro-modules in a local Swift package, Swift 6 strict concurrency. Features are kept to the minimum needed to exercise those mechanisms; vocabulary is in [`CONTEXT.md`](CONTEXT.md) and architectural decisions are in [`Docs/adr`](Docs/adr).
 
 ## What It Shows
 
@@ -67,7 +67,7 @@ Features do not know each other. Dashboard reports `onSelectTask(id)`, `AppNavig
 
 - **Mock backend.** `MockCourierAPI` reads a bundled JSON snapshot and accepts duplicate `Idempotency-Key`s. The initial load runs only on an empty database and after a reset; there is no pull-to-refresh and merging is insert-only.
 - **No background delivery.** Jobs are drained while the app runs, on launch, foreground, screen appearance and connectivity changes. A suspended process does not send anything; the next foreground drains overdue jobs.
-- **Undo lives only on the task screen.** The 5 s window is anchored to the stored `completedAt`, so a relaunch inside the window keeps the job held and Undo working.
+- **Undo is an app-wide toast.** The 5 s window is anchored to the stored `completedAt`, so a relaunch inside the window keeps the job held; the toast itself does not survive a relaunch.
 - **Contracts in `Domain` are the integration surface.** Fakes in `DomainTestSupport` implement the same protocols, which keeps UI tests of models free of SwiftData.
 - **Default isolation differs per layer.** `MainActor` for UI modules, `nonisolated` for `Domain`, `LocalStorage` and `SyncEngine`, so storage and sync stay off the main thread.
 - **No third-party dependencies.** iOS 26 only.
@@ -94,9 +94,11 @@ Launching with `--ui-testing` uses an in-memory store and short mock latency.
 ## Tooling
 
 ```bash
+make check         # lint, build and package tests with terse output; the local quality gate
 make build         # build the app for the Simulator (warnings are errors)
 make test          # package tests, then UI tests
 make test-package  # CourierModules unit tests only
+make test-module MODULE=SyncEngineTests  # one package test target
 make test-app      # host UI tests only
 make format        # apply swift-format in place
 make lint          # swift-format --strict, no changes
@@ -109,7 +111,7 @@ Manual log inspection: `xcrun simctl spawn booted log stream --predicate 'subsys
 
 ## Built with an Agentic Workflow
 
-This repository doubles as an experiment in AI-assisted development. The specification, architectural decisions, code review, and verification are mine; [Cursor](https://cursor.com/) executes against them in a **Plan > Review > Implement > Review** loop. Nothing lands without passing the review step and a green CI run.
+This repository doubles as an experiment in AI-assisted development. The specification, architectural decisions, code review, and verification are mine; [Cursor](https://cursor.com/) executes against them. The loop is grill, PRD, vertical-slice issues, TDD, `make check`, review. Agent context lives in [`AGENTS.md`](AGENTS.md), [`CONTEXT.md`](CONTEXT.md), `.cursor/rules` and `.cursor/skills`. Nothing lands without passing the review step and a green CI run.
 
 ## License
 

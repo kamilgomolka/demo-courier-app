@@ -1,8 +1,8 @@
+import Domain
 import FeatureDashboard
 import FeatureDelivery
 import FeatureHistory
 import FeatureSettings
-import Domain
 import LocalStorage
 import SwiftUI
 
@@ -73,10 +73,13 @@ struct MainTabView: View {
                 router.recordUndoFailure(error)
             }
         }
-        .alert(Text(.navigationUndoFailureTitle), isPresented: Binding(
-            get: { router.undoFailure != nil },
-            set: { if !$0 { router.dismissUndoFailure() } }
-        )) {
+        .alert(
+            Text(.navigationUndoFailureTitle),
+            isPresented: Binding(
+                get: { router.undoFailure != nil },
+                set: { if !$0 { router.dismissUndoFailure() } }
+            )
+        ) {
             Button(String(localized: .navigationRetry)) {
                 guard let pendingUndo = router.pendingDeliveryUndo else { return }
                 router.dismissUndoFailure()
