@@ -1,127 +1,78 @@
 # CourierApp
 
+**Clean iOS architecture with SPM micro-modules and an offline-first delivery workflow.**
+
 [![CI](https://github.com/kamilgomolka/demo-courier-app/actions/workflows/ci.yml/badge.svg)](https://github.com/kamilgomolka/demo-courier-app/actions/workflows/ci.yml)
-[![Swift](https://img.shields.io/badge/Swift-6.3-F05138.svg)](https://swift.org)
-[![Platform](https://img.shields.io/badge/iOS-26.0%2B-000000.svg)](https://developer.apple.com/ios/)
-[![Xcode](https://img.shields.io/badge/Xcode-26.6-1575F9.svg)](https://developer.apple.com/xcode/)
-[![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
 
-An architecture playground for a courier's daily workflow (iPhone only): offline-first, optimistic UI, outbox-based sync, micro-modules in a local Swift package, Swift 6 strict concurrency. Features are kept to the minimum needed to exercise those mechanisms; vocabulary is in [`CONTEXT.md`](CONTEXT.md) and architectural decisions are in [`Docs/adr`](Docs/adr).
+Small, independently compiled Swift modules, separating domain logic, feature presentation, persistence, and sync. A local Swift package manifest makes dependency boundaries explicit; The app host links a single composition-root product.
 
-## Demo
+Couriers can complete deliveries offline. Each task mutation and its outbox job are persisted in one transaction, survive app termination, and sync when connectivity returns. The workflow exercises module boundaries, concurrency, and failure recovery with SwiftUI, SwiftData, and Swift 6. No third-party dependencies.
 
-| Today | Delivery details | Sync simulation & outbox |
+[Design decisions](#key-design-decisions) · [Module boundaries](#module-boundaries) · [Failure recovery](#failure-recovery) · [Trade-offs](#scope--trade-offs)
+
+## Key Design Decisions
+
+| Problem | Decision | Evidence |
 | --- | --- | --- |
-| _Screenshot placeholder_ | _Screenshot placeholder_ | _Screenshot placeholder_ |
+| Features coupled to persistence or each other | Features depend on `Domain` contracts and `DesignSystem`; `AppNavigation` composes implementations and owns cross-feature navigation. | [Package manifest](CourierModules/Package.swift), [composition root ADR](Docs/adr/0003-composition-root-in-app-navigation.md) |
+| SwiftData leaking into presentation | Repository `AsyncStream`s expose domain snapshots; `@Model` types stay inside `LocalStorage`. | [Observation ADR](Docs/adr/0001-features-observe-streams-not-query.md), [observation tests](CourierModules/Tests/Core/LocalStorageTests/ObservationTests.swift) |
+| Local changes without a corresponding remote write | A single-writer `LocalStore` validates business invariants and writes each task mutation with its `SyncJob` atomically. | [Single-writer ADR](Docs/adr/0006-single-writer-store-enforces-invariants.md), [transition tests](CourierModules/Tests/Core/LocalStorageTests/TaskTransitionTests.swift) |
+| Remote success followed by a lost local acknowledgement | At-least-once delivery replays the persisted job with the same `Idempotency-Key`. | [Outbox ADR](Docs/adr/0004-outbox-at-least-once-with-idempotency-key.md), [replay tests](CourierModules/Tests/Core/SyncEngineTests/SyncResilienceTests.swift) |
+| Undo tied to a screen's lifetime | A persisted `notBefore` holds the job for the Undo window; the sync scheduler releases it independently of UI. | [Undo ADR](Docs/adr/0005-undo-window-as-held-outbox-job.md), [restart tests](CourierModules/Tests/Core/LocalStorageTests/DiskPersistenceTests.swift) |
+| One failed delivery blocking unrelated work | A failed job blocks later jobs for the same `taskID` within a drain; other tasks proceed. Retries require an external trigger. | [Scheduling tests](CourierModules/Tests/Core/SyncEngineTests/SyncSchedulingTests.swift) |
 
-_Recording placeholder: go offline → complete a delivery → inspect the pending outbox → relaunch → go online → watch the outbox drain._
+## Module Boundaries
 
-## What It Shows
-
-- **Offline-first with an outbox.** Every task mutation is written to SwiftData and enqueues a `SyncJob` in the same transaction. Shift mutations stay local. The UI only ever reads local state.
-- **Single outbox consumer.** `SyncActor` wakes at the earliest `notBefore`, drains FIFO, sends each job at most once per cycle and uses the job id as `Idempotency-Key` (at-least-once delivery, idempotent server).
-- **Delayed commit with Undo.** "Mark Delivered" holds its sync job for 5 s (`SyncPolicy.undoWindow`), closes the details screen and shows an app-wide Undo toast. Undo removes the job; expiry releases it even if the toast is no longer visible.
-- **Debounced reorder.** Drag-and-drop updates the queue optimistically; consecutive moves coalesce into one job whose deadline slides forward.
-- **Observation without `@Query`.** Features consume `AsyncStream`s from repository protocols and never see `@Model`.
-- **Network simulation.** Settings can force offline, latency range and failure type, show the outbox with attempts and last failure, reset local data, and trigger a manual sync.
-- **Injected time.** `TimeSource` lets tests drive scheduling with a manual clock.
-
-## Architecture
+Arrows show compile-time dependencies. The four feature targets are grouped for readability.
 
 ```mermaid
 graph TD
-    App[CourierApp host] --> AppNavigation
-    AppNavigation --> FeatureDashboard
-    AppNavigation --> FeatureDelivery
-    AppNavigation --> FeatureHistory
-    AppNavigation --> FeatureSettings
+    Host[CourierApp host] --> AppNavigation
+    AppNavigation --> Features[FeatureDashboard · FeatureDelivery<br/>FeatureHistory · FeatureSettings]
     AppNavigation --> LocalStorage
     AppNavigation --> SyncEngine
-    FeatureDashboard --> DesignSystem
-    FeatureDelivery --> DesignSystem
-    FeatureHistory --> DesignSystem
-    FeatureSettings --> DesignSystem
-    FeatureDashboard --> Domain
-    FeatureDelivery --> Domain
-    FeatureHistory --> Domain
-    FeatureSettings --> Domain
+    AppNavigation --> DesignSystem
+    AppNavigation --> Domain
+    Features --> DesignSystem
+    Features --> Domain
     LocalStorage --> Domain
     SyncEngine --> Domain
-    DesignSystem
 ```
 
-```
-CourierApp/                  # Host: App.swift only, links the AppNavigation product
-CourierAppUITests/           # Black-box UI tests (XCTest) driven by accessibility identifiers
-CourierModules/              # Local Swift package
-├── Sources/
-│   ├── Core/
-│   │   ├── Domain/          # Models, state machine, repository protocols (nonisolated)
-│   │   ├── DomainTestSupport/ # Fakes, fixtures, manual clock (tests and Debug-only previews)
-│   │   ├── LocalStorage/    # SwiftData schema and the LocalStore actor
-│   │   ├── SyncEngine/      # SyncActor and the mock API (static JSON, latency, simulated failures)
-│   │   └── DesignSystem/    # Color tokens, typography, reusable views
-│   ├── Features/
-│   │   └── Feature{Dashboard,Delivery,History,Settings}/
-│   └── App/
-│       └── AppNavigation/   # Composition root, tabs, router
-└── Tests/                   # Swift Testing, one test target per module, mirrors Sources/{Core,Features}
-Config/                      # xcconfig: language mode, strictness, warnings-as-errors
-```
+- **Domain defines the contracts.** Models, `TaskStateMachine`, and repository protocols have no dependencies on other project modules. `LocalStorage` and `SyncEngine` depend only on `Domain`; they do not import each other.
+- **Features own presentation.** Each has its own SPM target, resources, and test target. Features never import one another. `AppNavigation` injects dependencies, owns navigation, and is the only module that imports both storage and sync.
+- **Isolation follows responsibility.** UI modules default to `MainActor`; domain, storage, and sync modules are `nonisolated`. `LocalStore` and `SyncActor` own their mutable state. [Isolation ADR](Docs/adr/0002-default-isolation-per-layer.md).
 
-Features do not know each other. Dashboard reports `onSelectTask(id)`, `AppNavigation` owns the paths and builds the destination from `FeatureDelivery`.
+`DesignSystem` supplies shared tokens and views. `DomainTestSupport` supplies protocol fakes and a manual clock for tests and Debug-only previews; feature targets also depend on it for those previews.
 
-## Trade-offs & Production Notes
+## Failure Recovery
 
-- **Mock backend.** `MockCourierAPI` reads a bundled JSON snapshot and accepts duplicate `Idempotency-Key`s. The initial load runs only on an empty database and after a reset; there is no pull-to-refresh and merging is insert-only.
-- **No background delivery.** Jobs are drained while the app runs, on launch, foreground, screen appearance and connectivity changes. A suspended process does not send anything; the next foreground drains overdue jobs.
-- **Undo is an app-wide toast.** The 5 s window is anchored to the stored `completedAt`, so a relaunch inside the window keeps the job held; the toast itself does not survive a relaunch.
-- **Contracts in `Domain` are the integration surface.** Fakes in `DomainTestSupport` implement the same protocols, which keeps UI tests of models free of SwiftData.
-- **Default isolation differs per layer.** `MainActor` for UI modules, `nonisolated` for `Domain`, `LocalStorage` and `SyncEngine`, so storage and sync stay off the main thread.
-- **No third-party dependencies.** iOS 26 only.
-- **Not covered by automation:** visual polish and drag-and-drop feel, background suspension behaviour, and the CI runner's Xcode path until the first CI run.
+Tests exercise failure boundaries at three levels:
 
-## Requirements
+- **Storage:** reopen a disk-backed store and verify that task state and pending jobs survive, including the held Undo window. [DiskPersistenceTests](CourierModules/Tests/Core/LocalStorageTests/DiskPersistenceTests.swift).
+- **Sync:** replay an unacknowledged write with the same key, drain overdue jobs after restart, and reset during an in-flight request. Scheduling tests drive `ManualTimeSource` to verify deadlines, cancellation, and retry behavior. [SyncResilienceTests](CourierModules/Tests/Core/SyncEngineTests/SyncResilienceTests.swift), [SyncSchedulingTests](CourierModules/Tests/Core/SyncEngineTests/SyncSchedulingTests.swift).
+- **UI:** complete a delivery offline, terminate and relaunch the app with the same disk store, then reconnect and verify the outbox drains. [CourierAppUITests](CourierAppUITests/CourierAppUITests.swift).
 
-- Xcode 26.6 (CI pins `/Applications/Xcode_26.6.app`)
-- iOS 26.0+ deployment target; tests run on iPhone 17 Pro, iOS 26.5
-- Swift 6 language mode, strict concurrency, strict memory safety
+## Scope & Trade-offs
 
-## Getting Started
-
-```bash
-git clone https://github.com/kamilgomolka/demo-courier-app.git
-cd demo-courier-app
-open CourierApp.xcodeproj
-```
-
-Run the `CourierApp` scheme on an iOS 26+ Simulator. Signing is not required for the Simulator. For a device, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set your Team ID (the file is untracked).
-
-Launching a Debug build with `--ui-testing` uses an in-memory store and short mock latency. Setting `COURIER_UI_TEST_SESSION` to a UUID additionally selects an isolated disk store in the app's caches directory and a matching settings suite; reusing the UUID preserves both across relaunches. The offline/relaunch UI test uses this mode.
+- **Mock API:** bundled snapshots and configurable latency/failures make scenarios reproducible. Real backend integration is outside scope.
+- **Foreground sync:** jobs drain while the app runs. Suspension defers delivery until the next foreground; background execution is outside scope.
+- **Last write wins:** HTTP 409 resolution compares timestamps. A newer server version can discard a local write.
+- **Insert-only bootstrap:** initial load seeds an empty database; it does not reconcile later server changes to existing records.
+- **Persisted Undo window:** the job remains held across relaunch, but the Undo toast is not restored.
 
 ## Tooling
 
+Xcode 26.6 · iOS 26+ · Swift 6 language mode · strict concurrency and memory safety · warnings as errors.
+
+Open `CourierApp.xcodeproj` and run the `CourierApp` scheme on an iOS Simulator. The default test destination is iPhone 17 Pro, iOS 26.5; override with `SIMULATOR` and `OS`.
+
 ```bash
-make check         # lint, Debug/Release builds and package tests; the local quality gate
-make build         # build the app for the Simulator (warnings are errors)
-make build-release # build Release with the same strict warning policy
-make test          # package tests, then UI tests
-make test-package  # CourierModules unit tests only
-make test-module MODULE=SyncEngineTests  # one package test target
-make test-app      # host UI tests only
-make format        # apply swift-format in place
-make lint          # swift-format --strict, no changes
-make destinations  # list available Simulator destinations
+make check  # formatting lint, Debug/Release builds, package tests
+make test   # package tests and host UI tests
+make test-module MODULE=SyncEngineTests
 ```
 
-Override the Simulator with `make build SIMULATOR='iPhone 17 Pro' OS=26.5`. If `xcode-select` points at another Xcode, prefix commands with `DEVELOPER_DIR=/Applications/Xcode_26.6.app/Contents/Developer`, adjusting the path to your installed Xcode.
-
-Manual log inspection: `xcrun simctl spawn booted log stream --predicate 'subsystem == "com.kamilgomolka.CourierApp"'`.
-
-## Built with an Agentic Workflow
-
-This repository doubles as an experiment in AI-assisted development. The specification, architectural decisions, code review, and verification are mine; [Cursor](https://cursor.com/) executes against them. The loop is grill, PRD, vertical-slice issues, TDD, `make check`, review. Agent context lives in [`AGENTS.md`](AGENTS.md), [`CONTEXT.md`](CONTEXT.md), `.cursor/rules` and `.cursor/skills`. Nothing lands without passing the review step and a green CI run.
-
-## License
+[CI](.github/workflows/ci.yml) runs lint, package and UI tests, and a Release build. See the [Makefile](Makefile) for individual commands, [CONTEXT.md](CONTEXT.md) for domain vocabulary, and [ADRs](Docs/adr/) for decision details.
 
 MIT — see [LICENSE](LICENSE).
