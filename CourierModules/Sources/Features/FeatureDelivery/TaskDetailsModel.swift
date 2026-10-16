@@ -102,6 +102,10 @@ final class TaskDetailsModel {
         failure = nil
     }
 
+    func close() {
+        finish()
+    }
+
     @discardableResult
     private func commitDelivery() async -> Bool {
         await perform { () async throws(RepositoryError) in

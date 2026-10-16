@@ -15,24 +15,23 @@ enum AppTab: Hashable {
     case settings
 }
 
-enum DashboardRoute: Hashable {
-    case taskDetails(TaskID)
+struct TaskPresentation: Identifiable {
+    let id: TaskID
 }
 
 @Observable
 final class AppRouter {
     var selectedTab: AppTab = .dashboard
-    var dashboardPath: [DashboardRoute] = []
+    var presentedTask: TaskPresentation?
     private(set) var pendingDeliveryUndo: PendingDeliveryUndo?
     private(set) var undoFailure: RepositoryError?
 
     func showTaskDetails(id: TaskID) {
-        dashboardPath.append(.taskDetails(id))
+        presentedTask = TaskPresentation(id: id)
     }
 
     func closeTaskDetails() {
-        guard !dashboardPath.isEmpty else { return }
-        dashboardPath.removeLast()
+        presentedTask = nil
     }
 
     func offerUndo(for task: DeliveryTask) {

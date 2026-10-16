@@ -56,13 +56,14 @@ struct ShiftCardModelTests {
         run.cancel()
     }
 
-    @Test func startAndEndShiftDelegateToRepository() async {
+    @Test func shiftActionsDelegateToRepository() async {
         let model = makeModel()
 
         await model.startShift()
         await model.endShift()
+        await model.reopenShift()
 
-        #expect(shiftRepository.calls == [.startShift, .endShift])
+        #expect(shiftRepository.calls == [.startShift, .endShift, .reopenShift])
         #expect(model.actionFailure == nil)
     }
 

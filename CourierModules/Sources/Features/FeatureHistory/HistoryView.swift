@@ -21,8 +21,14 @@ public struct HistoryView: View {
                 List(model.sections) { section in
                     Section {
                         ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                            HistoryRowView(task: task, isLast: index == section.tasks.count - 1)
-                                .accessibilityIdentifier(HistoryAccessibility.row(id: task.id))
+                            HistoryRowView(
+                                task: task,
+                                isFirst: index == 0,
+                                isLast: index == section.tasks.count - 1
+                            )
+                            .accessibilityIdentifier(HistoryAccessibility.row(id: task.id))
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                         }
                     } header: {
                         Text(section.day, format: .dateTime.day().month().year())
@@ -32,25 +38,20 @@ public struct HistoryView: View {
         }
         .navigationTitle(Text(.historyNavigationTitle))
         .task { await model.run() }
+        .scrollContentBackground(.hidden)
+        .background(Palette.backgroundPrimary)
     }
 }
 
 private struct HistoryRowView: View {
     let task: DeliveryTask
+    let isFirst: Bool
     let isLast: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(spacing: 0) {
-                Circle()
-                    .fill(task.status == .exception ? Palette.danger : Palette.success)
-                    .frame(width: 10, height: 10)
-                Rectangle()
-                    .fill(Palette.textSecondary.opacity(isLast ? 0.18 : 0.42))
-                    .frame(width: 2)
-            }
-            .frame(width: 12, height: 62, alignment: .top)
-            VStack(alignment: .leading, spacing: 4) {
+            Color.clear.frame(width: 16)
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(task.recipientName)
                         .font(Typography.headline)
@@ -61,6 +62,15 @@ private struct HistoryRowView: View {
                 Text(subtitle)
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary)
+                if let completedAt = task.completedAt {
+                    Label {
+                        Text(completedAt, format: .dateTime.hour().minute())
+                    } icon: {
+                        Image(systemName: "clock")
+                    }
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.textSecondary)
+                }
                 if task.syncState == .pending {
                     StatusBadge(
                         .historyBadgePendingSync, systemImage: "arrow.triangle.2.circlepath", tint: Palette.warning
@@ -69,7 +79,26 @@ private struct HistoryRowView: View {
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 16)
+        .background(alignment: .leading) {
+            GeometryReader { geometry in
+                Path { path in
+                    if !isFirst {
+                        path.move(to: CGPoint(x: 8, y: 0))
+                        path.addLine(to: CGPoint(x: 8, y: 26))
+                    }
+                    if !isLast {
+                        path.move(to: CGPoint(x: 8, y: 26))
+                        path.addLine(to: CGPoint(x: 8, y: geometry.size.height))
+                    }
+                }
+                .stroke(Palette.textSecondary.opacity(0.32), lineWidth: 2)
+                Circle()
+                    .fill(task.status == .exception ? Palette.danger : Palette.success)
+                    .frame(width: 12, height: 12)
+                    .position(x: 8, y: 26)
+            }
+        }
     }
 
     @ViewBuilder

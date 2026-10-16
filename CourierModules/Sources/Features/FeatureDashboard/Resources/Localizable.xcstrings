@@ -128,7 +128,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Completed deliveries are listed in History."
+            "value": "Completed stops are in your activity."
           }
         }
       }
@@ -139,7 +139,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No deliveries in the queue"
+            "value": "All stops done"
           }
         }
       }
@@ -150,7 +150,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "In transit"
+            "value": "On the way"
           }
         }
       }
@@ -172,7 +172,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Up next"
+            "value": "Next stops"
           }
         }
       }
@@ -183,7 +183,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Earnings"
+            "value": "Earned so far"
           }
         }
       }
@@ -194,7 +194,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Finish the delivery in transit to end the shift."
+            "value": "Finish your current delivery before ending the shift."
           }
         }
       }
@@ -205,7 +205,51 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "End Shift"
+            "value": "End shift"
+          }
+        }
+      }
+    },
+    "dashboard.shiftCard.endConfirmButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End shift"
+          }
+        }
+      }
+    },
+    "dashboard.shiftCard.endConfirmationMessage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can reopen it later if you still have stops to make."
+          }
+        }
+      }
+    },
+    "dashboard.shiftCard.endConfirmationTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End your shift?"
+          }
+        }
+      }
+    },
+    "dashboard.shiftCard.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your shift"
           }
         }
       }
@@ -216,7 +260,18 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld of %2$lld completed"
+            "value": "%1$lld of %2$lld stops done"
+          }
+        }
+      }
+    },
+    "dashboard.shiftCard.reopenButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reopen shift"
           }
         }
       }
@@ -227,7 +282,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Start Shift"
+            "value": "Start shift"
           }
         }
       }
@@ -238,7 +293,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shift in progress"
+            "value": "On the road"
           }
         }
       }
@@ -249,7 +304,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shift finished"
+            "value": "Shift wrapped up"
           }
         }
       }
@@ -260,7 +315,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shift scheduled"
+            "value": "Ready when you are"
           }
         }
       }

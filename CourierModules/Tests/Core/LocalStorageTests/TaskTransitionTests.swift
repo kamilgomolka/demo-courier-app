@@ -6,6 +6,27 @@ import Testing
 @testable import LocalStorage
 
 struct TaskTransitionTests {
+    @Test func finishedShiftCanReopenWithoutChangingCompletedTasks() async throws {
+        let fixture = try await StoreFixture.make()
+        try await fixture.store.startDelivery(id: "task-1")
+        try await fixture.store.markDelivered(id: "task-1")
+        try await fixture.store.endShift()
+
+        try await fixture.store.reopenShift()
+
+        #expect(try await fixture.shiftSummary().status == .active)
+        #expect(try await fixture.task("task-1").status == .delivered)
+        #expect(try await fixture.jobs().count == 2)
+    }
+
+    @Test func shiftCannotReopenBeforeItEnds() async throws {
+        let fixture = try await StoreFixture.make()
+
+        await #expect(throws: RepositoryError.invalidShiftTransition) {
+            try await fixture.store.reopenShift()
+        }
+    }
+
     @Test func startDeliveryChangesStatusAndCreatesJobInOneTransaction() async throws {
         let fixture = try await StoreFixture.make()
 

@@ -89,6 +89,39 @@
         }
       }
     },
+    "delivery.details.addressLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop-off address"
+          }
+        }
+      }
+    },
+    "delivery.details.closeButton": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close stop details"
+          }
+        }
+      }
+    },
+    "delivery.details.completionPrompt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Package handed over?"
+          }
+        }
+      }
+    },
     "delivery.details.deliveredTitle": {
       "extractionState": "manual",
       "localizations": {
@@ -117,7 +150,51 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mark Delivered"
+            "value": "Mark delivered"
+          }
+        }
+      }
+    },
+    "delivery.details.navigationTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop details"
+          }
+        }
+      }
+    },
+    "delivery.details.packageLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Package"
+          }
+        }
+      }
+    },
+    "delivery.details.payoutLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You earn"
+          }
+        }
+      }
+    },
+    "delivery.details.recipientLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delivering to"
           }
         }
       }
@@ -128,7 +205,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Report Exception"
+            "value": "Something went wrong"
           }
         }
       }
@@ -139,7 +216,18 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Start Delivery"
+            "value": "Start delivery"
+          }
+        }
+      }
+    },
+    "delivery.details.startPrompt": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready to head out?"
           }
         }
       }
@@ -205,7 +293,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Describe the problem"
+            "value": "What happened?"
           }
         }
       }
@@ -216,7 +304,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Other"
+            "value": "Something else"
           }
         }
       }
@@ -238,7 +326,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Save"
+            "value": "Save problem"
           }
         }
       }
@@ -249,7 +337,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Report Exception"
+            "value": "Report a problem"
           }
         }
       }

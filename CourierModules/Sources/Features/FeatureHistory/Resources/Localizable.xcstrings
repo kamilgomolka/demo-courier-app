@@ -18,7 +18,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Exception"
+            "value": "Problem"
           }
         }
       }
@@ -29,7 +29,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pending sync"
+            "value": "Waiting to sync"
           }
         }
       }
@@ -40,7 +40,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Delivered and failed tasks will appear here."
+            "value": "Finished deliveries will show up here."
           }
         }
       }
@@ -51,7 +51,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No completed deliveries"
+            "value": "Nothing here yet"
           }
         }
       }
@@ -62,7 +62,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "History"
+            "value": "Activity"
           }
         }
       }

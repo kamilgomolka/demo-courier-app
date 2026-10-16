@@ -6,12 +6,13 @@ struct TaskRowView: View {
     let task: DeliveryTask
 
     var body: some View {
-        HStack(spacing: 12) {
-            Capsule()
-                .fill(statusColor)
-                .frame(width: 4)
-                .frame(maxHeight: .infinity)
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: task.status == .inTransit ? "bicycle" : "shippingbox.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(statusColor)
+                .frame(width: 38, height: 38)
+                .background(statusColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+            VStack(alignment: .leading, spacing: 9) {
                 HStack {
                     Text(task.recipientName)
                         .font(Typography.headline)
@@ -22,16 +23,16 @@ struct TaskRowView: View {
                         .foregroundStyle(Palette.textPrimary)
                         .frame(minWidth: 58, alignment: .trailing)
                 }
-                Text(task.deliveryAddress)
+                Label(task.deliveryAddress, systemImage: "mappin")
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary)
-                Text(task.packageSummary)
+                Label(task.packageSummary, systemImage: "cube.box")
                     .font(Typography.caption)
                     .foregroundStyle(Palette.textSecondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
 

@@ -28,18 +28,9 @@ public struct SettingsView: View {
         }
         .navigationTitle(Text(.settingsNavigationTitle))
         .task { await model.run() }
-        .confirmationDialog(
-            Text(.settingsResetConfirmationTitle),
-            isPresented: $isResetConfirmationPresented,
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: .settingsResetConfirmButton), role: .destructive) {
-                Task { await model.resetLocalData() }
-            }
-            .accessibilityIdentifier(SettingsAccessibility.resetConfirmButton)
-        } message: {
-            Text(.settingsResetConfirmationMessage)
-        }
+        .scrollContentBackground(.hidden)
+        .background(Palette.backgroundPrimary)
+        .tint(Palette.accent)
         .alert(
             Text(.settingsResetFailureTitle),
             isPresented: Binding(
@@ -59,40 +50,51 @@ public struct SettingsView: View {
 
     private var simulationSection: some View {
         Section {
-            Toggle(
-                isOn: Binding(
-                    get: { model.conditions.isOffline },
-                    set: { isOffline in Task { await model.setOffline(isOffline) } }
-                )
-            ) {
-                Text(.settingsSimulationOffline)
-            }
-            .accessibilityIdentifier(SettingsAccessibility.offlineToggle)
-            latencyStepper(
-                title: .settingsSimulationLatencyFrom,
-                value: Binding(
-                    get: { model.conditions.latencyRange.lowerBound },
-                    set: { model.setLatencyLowerBound($0) }
-                )
-            )
-            latencyStepper(
-                title: .settingsSimulationLatencyTo,
-                value: Binding(
-                    get: { model.conditions.latencyRange.upperBound },
-                    set: { model.setLatencyUpperBound($0) }
-                )
-            )
             Picker(
                 selection: Binding(
-                    get: { model.conditions.simulatedFailure },
-                    set: { model.setSimulatedFailure($0) }
+                    get: {
+                        model.conditions.isOffline
+                            ? SimulationChoice.offline : .failure(model.conditions.simulatedFailure)
+                    },
+                    set: { choice in
+                        Task {
+                            switch choice {
+                            case .offline:
+                                model.setSimulatedFailure(.none)
+                                await model.setOffline(true)
+                            case .failure(let failure):
+                                model.setSimulatedFailure(failure)
+                                await model.setOffline(false)
+                            }
+                        }
+                    }
                 )
             ) {
+                Text(.settingsSimulationOffline).tag(SimulationChoice.offline)
                 ForEach(SimulatedFailure.allCases, id: \.self) { failure in
-                    Text(title(for: failure)).tag(failure)
+                    Text(title(for: failure)).tag(SimulationChoice.failure(failure))
                 }
             } label: {
-                Text(.settingsSimulationFailure)
+                Label(.settingsSimulationFailure, systemImage: "wifi.exclamationmark")
+            }
+            .accessibilityIdentifier(SettingsAccessibility.simulatedFailurePicker)
+            VStack(alignment: .leading, spacing: 12) {
+                Label(.settingsSimulationLatency, systemImage: "timer")
+                latencyStepper(
+                    title: .settingsSimulationLatencyFrom,
+                    value: Binding(
+                        get: { model.conditions.latencyRange.lowerBound },
+                        set: { model.setLatencyLowerBound($0) }
+                    )
+                )
+                Divider()
+                latencyStepper(
+                    title: .settingsSimulationLatencyTo,
+                    value: Binding(
+                        get: { model.conditions.latencyRange.upperBound },
+                        set: { model.setLatencyUpperBound($0) }
+                    )
+                )
             }
         } header: {
             Text(.settingsSimulationHeader)
@@ -104,10 +106,22 @@ public struct SettingsView: View {
             Button(role: .destructive) {
                 isResetConfirmationPresented = true
             } label: {
-                Text(.settingsResetButton)
+                Label(.settingsResetButton, systemImage: "arrow.counterclockwise")
             }
             .disabled(model.isResetting)
             .accessibilityIdentifier(SettingsAccessibility.resetButton)
+            .confirmationDialog(
+                Text(.settingsResetConfirmationTitle),
+                isPresented: $isResetConfirmationPresented,
+                titleVisibility: .visible
+            ) {
+                Button(String(localized: .settingsResetConfirmButton), role: .destructive) {
+                    Task { await model.resetLocalData() }
+                }
+                .accessibilityIdentifier(SettingsAccessibility.resetConfirmButton)
+            } message: {
+                Text(.settingsResetConfirmationMessage)
+            }
         }
     }
 
@@ -116,11 +130,12 @@ public struct SettingsView: View {
             Button {
                 Task { await model.syncNow() }
             } label: {
-                Text(.settingsSyncNowButton)
+                Label(.settingsSyncNowButton, systemImage: "arrow.triangle.2.circlepath")
             }
+            .disabled(model.jobs.isEmpty)
             .accessibilityIdentifier(SettingsAccessibility.syncNowButton)
             if model.jobs.isEmpty {
-                Text(.settingsJobsEmpty)
+                Label(.settingsJobsEmpty, systemImage: "checkmark.circle")
                     .foregroundStyle(Palette.textSecondary)
             }
             ForEach(model.jobs) { job in
@@ -137,8 +152,11 @@ public struct SettingsView: View {
             HStack {
                 Text(title)
                 Spacer()
-                Text(value.wrappedValue, format: .number.precision(.fractionLength(1)))
-                    .foregroundStyle(Palette.textSecondary)
+                HStack(spacing: 0) {
+                    Text(value.wrappedValue, format: .number.precision(.fractionLength(1)))
+                    Text(.settingsSimulationSecondsSuffix)
+                }
+                .foregroundStyle(Palette.textSecondary)
             }
         }
     }
@@ -155,6 +173,11 @@ public struct SettingsView: View {
         case .conflict: .settingsFailureConflict
         }
     }
+}
+
+private enum SimulationChoice: Hashable {
+    case offline
+    case failure(SimulatedFailure)
 }
 
 private struct SyncJobRowView: View {

@@ -25,4 +25,14 @@ extension LocalStore {
             shift.endDate = timeSource.now()
         }
     }
+
+    public func reopenShift() async throws(RepositoryError) {
+        try transact { () throws(RepositoryError) in
+            guard let shift = try fetch(ShiftRecord.self).first, shift.status == .finished else {
+                throw .invalidShiftTransition
+            }
+            shift.status = .active
+            shift.endDate = nil
+        }
+    }
 }

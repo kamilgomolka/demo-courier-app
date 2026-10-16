@@ -3,4 +3,5 @@ public protocol ShiftRepository: Sendable {
 
     func startShift() async throws(RepositoryError)
     func endShift() async throws(RepositoryError)
+    func reopenShift() async throws(RepositoryError)
 }

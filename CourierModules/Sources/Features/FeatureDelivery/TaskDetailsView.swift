@@ -24,7 +24,19 @@ public struct TaskDetailsView: View {
 
     public var body: some View {
         content
+            .background(Palette.backgroundPrimary)
+            .navigationTitle(Text(.deliveryDetailsNavigationTitle))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        model.close()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .accessibilityLabel(Text(.deliveryDetailsCloseButton))
+                }
+            }
             .task { await model.run() }
             .task(id: model.undoDeadline) { await model.finishWhenUndoWindowExpires() }
             .sensoryFeedback(.success, trigger: model.task?.status) { previous, current in
@@ -60,67 +72,111 @@ public struct TaskDetailsView: View {
     @ViewBuilder
     private var content: some View {
         if let task = model.task {
-            VStack(alignment: .leading, spacing: 24) {
-                details(of: task)
-                actions(for: task)
-                Spacer()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label(.deliveryDetailsRecipientLabel, systemImage: "person.crop.circle")
+                            .font(.caption.weight(.bold))
+                            .textCase(.uppercase)
+                            .foregroundStyle(Palette.accent)
+                        Text(task.recipientName)
+                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                            .foregroundStyle(Palette.textPrimary)
+                            .minimumScaleFactor(0.75)
+                    }
+                    details(of: task)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(24)
             }
-            .padding()
-            .navigationTitle(task.recipientName)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                actions(for: task)
+                    .padding(24)
+                    .frame(maxWidth: .infinity)
+                    .background(.regularMaterial)
+            }
         } else {
             ProgressView()
         }
     }
 
     private func details(of task: DeliveryTask) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(task.deliveryAddress)
-                .font(Typography.title)
-                .foregroundStyle(Palette.textPrimary)
-            Text(task.packageSummary)
-                .font(Typography.body)
-                .foregroundStyle(Palette.textSecondary)
-            Text(task.payout, format: .currency(code: "GBP"))
-                .font(Typography.headline)
-                .foregroundStyle(Palette.textPrimary)
+        VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(.deliveryDetailsAddressLabel, systemImage: "mappin.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Palette.accent)
+                Text(task.deliveryAddress)
+                    .font(.system(.title3, design: .rounded, weight: .semibold))
+                    .foregroundStyle(Palette.textPrimary)
+            }
+            Divider()
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label(.deliveryDetailsPackageLabel, systemImage: "shippingbox")
+                        .font(Typography.caption)
+                        .foregroundStyle(Palette.textSecondary)
+                    Text(task.packageSummary)
+                        .font(Typography.body)
+                        .foregroundStyle(Palette.textPrimary)
+                }
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text(.deliveryDetailsPayoutLabel)
+                        .font(Typography.caption)
+                        .foregroundStyle(Palette.textSecondary)
+                    Text(task.payout, format: .currency(code: "GBP"))
+                        .font(Typography.amount.monospacedDigit())
+                        .foregroundStyle(Palette.textPrimary)
+                }
+            }
         }
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 16))
+        .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 22))
     }
 
     @ViewBuilder
     private func actions(for task: DeliveryTask) -> some View {
-        switch task.status {
-        case .new:
-            PrimaryButton(.deliveryDetailsStartButton) {
-                Task { await model.startDelivery() }
+        VStack(spacing: 12) {
+            switch task.status {
+            case .new:
+                Text(.deliveryDetailsStartPrompt)
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.textSecondary)
+                PrimaryButton(.deliveryDetailsStartButton, systemImage: "bicycle") {
+                    Task { await model.startDelivery() }
+                }
+                .disabled(model.isPerformingAction)
+                .accessibilityIdentifier(DeliveryAccessibility.startButton)
+            case .inTransit:
+                Text(.deliveryDetailsCompletionPrompt)
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.textSecondary)
+                PrimaryButton(.deliveryDetailsMarkDeliveredButton, systemImage: "checkmark", role: .success) {
+                    Task { await model.markDelivered() }
+                }
+                .disabled(model.isPerformingAction)
+                .accessibilityIdentifier(DeliveryAccessibility.markDeliveredButton)
+                Button {
+                    isExceptionSheetPresented = true
+                } label: {
+                    Label(.deliveryDetailsReportExceptionButton, systemImage: "exclamationmark.bubble")
+                        .font(Typography.headline)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .buttonBorderShape(.roundedRectangle(radius: 16))
+                .tint(Palette.danger)
+                .accessibilityIdentifier(DeliveryAccessibility.reportExceptionButton)
+            case .delivered, .exception:
+                PrimaryButton(.deliveryDetailsDoneButton, systemImage: "checkmark") {
+                    Task { await model.completeDelivery() }
+                }
+                .disabled(model.isPerformingAction)
+                .accessibilityIdentifier(DeliveryAccessibility.doneButton)
             }
-            .disabled(model.isPerformingAction)
-            .accessibilityIdentifier(DeliveryAccessibility.startButton)
-        case .inTransit:
-            PrimaryButton(.deliveryDetailsMarkDeliveredButton, role: .success) {
-                Task { await model.markDelivered() }
-            }
-            .disabled(model.isPerformingAction)
-            .accessibilityIdentifier(DeliveryAccessibility.markDeliveredButton)
-            PrimaryButton(.deliveryDetailsReportExceptionButton, role: .destructive) {
-                isExceptionSheetPresented = true
-            }
-            .accessibilityIdentifier(DeliveryAccessibility.reportExceptionButton)
-        case .delivered:
-            deliveredActions()
-        case .exception:
-            EmptyView()
         }
-    }
-
-    @ViewBuilder
-    private func deliveredActions() -> some View {
-        PrimaryButton(.deliveryDetailsDoneButton) {
-            Task { await model.completeDelivery() }
-        }
-        .disabled(model.isPerformingAction)
-        .accessibilityIdentifier(DeliveryAccessibility.doneButton)
     }
 }

@@ -4,7 +4,7 @@ Ubiquitous language of CourierApp. Names here are the names in code.
 
 ## Work
 
-- **Shift**: a courier's working period. `scheduled`, then `active`, then `finished` (terminal). Reset only through Settings. Local only; never produces a `SyncJob`.
+- **Shift**: a courier's working period. `scheduled`, then `active`, then `finished`. A finished Shift may be reopened to `active`. Local only; never produces a `SyncJob`.
 - **DeliveryTask**: one package to deliver, belonging to a Shift. Status `new`, `inTransit`, `delivered` or `exception`.
 - **Queue**: the `new` tasks plus the single `inTransit` task, ordered by `sortOrder`. The courier reorders the `new` part.
 - **Exception**: a task the courier could not deliver, with an `ExceptionReason` (`customerNoShow`, `addressNotFound`, `packageDamaged`, `other(details:)`). Bypasses the Undo window.

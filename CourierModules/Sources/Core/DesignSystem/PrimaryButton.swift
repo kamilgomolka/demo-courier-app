@@ -1,30 +1,46 @@
 public import SwiftUI
 
 public struct PrimaryButton: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     public enum Role {
         case standard
         case success
-        case destructive
     }
 
     private let title: LocalizedStringResource
+    private let systemImage: String?
     private let role: Role
     private let action: () -> Void
 
-    public init(_ title: LocalizedStringResource, role: Role = .standard, action: @escaping () -> Void) {
+    public init(
+        _ title: LocalizedStringResource,
+        systemImage: String? = nil,
+        role: Role = .standard,
+        action: @escaping () -> Void
+    ) {
         self.title = title
+        self.systemImage = systemImage
         self.role = role
         self.action = action
     }
 
     public var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(Typography.headline)
-                .frame(maxWidth: .infinity)
+            Group {
+                if let systemImage {
+                    Label(title, systemImage: systemImage)
+                } else {
+                    Text(title)
+                }
+            }
+            .font(Typography.headline)
+            .foregroundStyle(colorScheme == .dark ? Color.black : Color.white)
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
+        .buttonBorderShape(.roundedRectangle(radius: 16))
         .tint(tint)
     }
 
@@ -32,7 +48,6 @@ public struct PrimaryButton: View {
         switch role {
         case .standard: Palette.accent
         case .success: Palette.success
-        case .destructive: Palette.danger
         }
     }
 }

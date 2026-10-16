@@ -106,7 +106,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No pending jobs"
+            "value": "All caught up"
           }
         }
       }
@@ -117,7 +117,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sync queue"
+            "value": "Waiting to sync"
           }
         }
       }
@@ -161,7 +161,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reset"
+            "value": "Reset data"
           }
         }
       }
@@ -172,7 +172,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pending changes are discarded and data is reloaded from the server."
+            "value": "Your local changes will be cleared and the sample data will load again."
           }
         }
       }
@@ -183,7 +183,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reset local data?"
+            "value": "Reset demo data?"
           }
         }
       }
@@ -227,7 +227,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reset local data"
+            "value": "Reset demo data"
           }
         }
       }
@@ -238,7 +238,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Simulated failure"
+            "value": "Test a network issue"
           }
         }
       }
@@ -249,7 +249,18 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Network simulation"
+            "value": "Network playground"
+          }
+        }
+      }
+    },
+    "settings.simulation.latency": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latency"
           }
         }
       }
@@ -260,7 +271,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Min latency (s)"
+            "value": "Min"
           }
         }
       }
@@ -271,7 +282,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Max latency (s)"
+            "value": "Max"
           }
         }
       }
@@ -282,7 +293,18 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Simulate offline"
+            "value": "Offline"
+          }
+        }
+      }
+    },
+    "settings.simulation.secondsSuffix": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "s"
           }
         }
       }

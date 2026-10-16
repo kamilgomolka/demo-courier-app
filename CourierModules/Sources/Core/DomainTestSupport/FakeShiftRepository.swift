@@ -5,6 +5,7 @@ public final class FakeShiftRepository: ShiftRepository {
     public enum Call: Equatable, Sendable {
         case startShift
         case endShift
+        case reopenShift
     }
 
     public let summary = StreamBroadcaster<ShiftSummary?>(nil)
@@ -39,6 +40,10 @@ public final class FakeShiftRepository: ShiftRepository {
 
     public func endShift() async throws(RepositoryError) {
         try await record(.endShift)
+    }
+
+    public func reopenShift() async throws(RepositoryError) {
+        try await record(.reopenShift)
     }
 
     public func holdCalls() {

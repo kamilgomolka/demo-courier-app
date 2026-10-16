@@ -24,6 +24,7 @@ final class CourierAppUITests: XCTestCase {
 
         let startButton = app.buttons["delivery.startButton"]
         XCTAssertTrue(startButton.waitForExistence(timeout: 5.0))
+        XCTAssertFalse(app.tabBars.firstMatch.isHittable)
         startButton.tap()
 
         let markDeliveredButton = app.buttons["delivery.markDeliveredButton"]
@@ -34,15 +35,16 @@ final class CourierAppUITests: XCTestCase {
         XCTAssertTrue(undoButton.waitForExistence(timeout: 5.0))
         undoButton.tap()
 
+        XCTAssertTrue(firstRow.waitForExistence(timeout: 5.0))
+        firstRow.tap()
         XCTAssertTrue(app.buttons["delivery.markDeliveredButton"].waitForExistence(timeout: 5.0))
     }
 
-    func testDoneCommitsDeliveryAndReturnsToDashboard() throws {
+    func testDeliveryReturnsToDashboard() throws {
         app.buttons["dashboard.startShiftButton"].tap()
         app.buttons["dashboard.taskRow.task-01"].tap()
         app.buttons["delivery.startButton"].tap()
         app.buttons["delivery.markDeliveredButton"].tap()
-        app.buttons["delivery.doneButton"].tap()
 
         XCTAssertTrue(app.buttons["dashboard.endShiftButton"].waitForExistence(timeout: 5.0))
         XCTAssertFalse(app.buttons["dashboard.taskRow.task-01"].exists)
@@ -53,9 +55,8 @@ final class CourierAppUITests: XCTestCase {
         app.buttons["dashboard.taskRow.task-01"].tap()
         app.buttons["delivery.startButton"].tap()
         app.buttons["delivery.markDeliveredButton"].tap()
-        app.buttons["delivery.doneButton"].tap()
 
-        app.tabBars.buttons["History"].tap()
+        app.tabBars.buttons["Activity"].tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["history.row.task-01"].waitForExistence(timeout: 5.0))
     }
@@ -82,7 +83,20 @@ final class CourierAppUITests: XCTestCase {
     func testSettingsShowsSimulationControls() throws {
         app.tabBars.buttons["Settings"].tap()
 
-        XCTAssertTrue(app.switches["settings.offlineToggle"].waitForExistence(timeout: 5.0))
+        XCTAssertTrue(app.buttons["settings.simulatedFailurePicker"].waitForExistence(timeout: 5.0))
         XCTAssertTrue(app.buttons["settings.syncNowButton"].exists)
+        XCTAssertFalse(app.buttons["settings.syncNowButton"].isEnabled)
+    }
+
+    func testShiftCanEndAndReopenAfterConfirmation() throws {
+        app.buttons["dashboard.startShiftButton"].tap()
+        app.buttons["dashboard.endShiftButton"].tap()
+
+        XCTAssertTrue(app.buttons["dashboard.endShiftConfirmButton"].waitForExistence(timeout: 5.0))
+        app.buttons["dashboard.endShiftConfirmButton"].tap()
+        XCTAssertTrue(app.buttons["dashboard.reopenShiftButton"].waitForExistence(timeout: 5.0))
+
+        app.buttons["dashboard.reopenShiftButton"].tap()
+        XCTAssertTrue(app.buttons["dashboard.endShiftButton"].waitForExistence(timeout: 5.0))
     }
 }

@@ -6,7 +6,6 @@ struct TaskQueueView: View {
     let shiftCardModel: ShiftCardModel
     let queueModel: TaskQueueModel
     let isInteractive: Bool
-    let taskNamespace: Namespace.ID
     let onSelectTask: (TaskID) -> Void
 
     var body: some View {
@@ -61,7 +60,6 @@ struct TaskQueueView: View {
         .disabled(!isInteractive)
         .opacity(isInteractive ? 1 : 0.5)
         .accessibilityIdentifier(DashboardAccessibility.taskRow(id: task.id))
-        .matchedTransitionSource(id: task.id, in: taskNamespace)
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
             if task.status == .new {
                 Button {

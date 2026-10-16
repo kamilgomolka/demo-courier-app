@@ -13,11 +13,14 @@ public struct StatusBadge: View {
     }
 
     public var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(Typography.caption)
-            .foregroundStyle(tint)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(tint.opacity(0.15), in: Capsule())
+        HStack(spacing: 4) {
+            Image(systemName: systemImage)
+            Text(title)
+        }
+        .font(Typography.caption)
+        .foregroundStyle(tint)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(tint.opacity(0.15), in: Capsule())
     }
 }

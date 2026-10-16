@@ -1,3 +1,4 @@
+import DesignSystem
 import Domain
 import FeatureDashboard
 import FeatureDelivery
@@ -9,31 +10,17 @@ import SwiftUI
 struct MainTabView: View {
     let environment: AppEnvironment
     @Bindable var router: AppRouter
-    @Namespace private var taskNamespace
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
             Tab(.navigationTabDashboard, systemImage: "shippingbox", value: AppTab.dashboard) {
-                NavigationStack(path: $router.dashboardPath) {
+                NavigationStack {
                     DashboardView(
                         taskRepository: environment.store,
                         shiftRepository: environment.store,
                         syncController: environment.syncActor,
-                        taskNamespace: taskNamespace,
                         onSelectTask: { router.showTaskDetails(id: $0) }
                     )
-                    .navigationDestination(for: DashboardRoute.self) { route in
-                        switch route {
-                        case .taskDetails(let taskID):
-                            TaskDetailsView(
-                                taskID: taskID,
-                                taskRepository: environment.store,
-                                onDeliveryMarked: { router.offerUndo(for: $0) },
-                                onFinish: { router.closeTaskDetails() }
-                            )
-                            .navigationTransition(.zoom(sourceID: taskID, in: taskNamespace))
-                        }
-                    }
                 }
             }
             Tab(.navigationTabHistory, systemImage: "clock", value: AppTab.history) {
@@ -49,6 +36,17 @@ struct MainTabView: View {
                         syncController: environment.syncActor
                     )
                 }
+            }
+        }
+        .tint(Palette.accent)
+        .fullScreenCover(item: $router.presentedTask) { presentation in
+            NavigationStack {
+                TaskDetailsView(
+                    taskID: presentation.id,
+                    taskRepository: environment.store,
+                    onDeliveryMarked: { router.offerUndo(for: $0) },
+                    onFinish: { router.closeTaskDetails() }
+                )
             }
         }
         .overlay(alignment: .bottom) {

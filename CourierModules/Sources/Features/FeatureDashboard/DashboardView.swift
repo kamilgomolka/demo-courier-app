@@ -6,14 +6,12 @@ public struct DashboardView: View {
     @State private var shiftCardModel: ShiftCardModel
     @State private var queueModel: TaskQueueModel
     private let syncController: any SyncControlling
-    private let taskNamespace: Namespace.ID
     private let onSelectTask: (TaskID) -> Void
 
     public init(
         taskRepository: any TaskRepository,
         shiftRepository: any ShiftRepository,
         syncController: any SyncControlling,
-        taskNamespace: Namespace.ID,
         onSelectTask: @escaping (TaskID) -> Void
     ) {
         _shiftCardModel = State(
@@ -21,7 +19,6 @@ public struct DashboardView: View {
         )
         _queueModel = State(initialValue: TaskQueueModel(taskRepository: taskRepository))
         self.syncController = syncController
-        self.taskNamespace = taskNamespace
         self.onSelectTask = onSelectTask
     }
 
@@ -73,7 +70,6 @@ public struct DashboardView: View {
                 shiftCardModel: shiftCardModel,
                 queueModel: queueModel,
                 isInteractive: shiftCardModel.isShiftActive,
-                taskNamespace: taskNamespace,
                 onSelectTask: onSelectTask
             )
         }

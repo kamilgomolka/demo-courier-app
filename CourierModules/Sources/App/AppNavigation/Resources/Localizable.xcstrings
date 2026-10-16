@@ -1,6 +1,28 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "navigation.dismiss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss"
+          }
+        }
+      }
+    },
+    "navigation.retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
+      }
+    },
     "navigation.startupError.message": {
       "extractionState": "manual",
       "localizations": {
@@ -29,7 +51,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deliveries"
+            "value": "Today"
           }
         }
       }
@@ -40,7 +62,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "History"
+            "value": "Activity"
           }
         }
       }
@@ -52,6 +74,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        }
+      }
+    },
+    "navigation.undoFailure.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't finish delivery"
           }
         }
       }
@@ -74,39 +107,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Undo"
-          }
-        }
-      }
-    },
-    "navigation.undoFailure.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Couldn't finish delivery"
-          }
-        }
-      }
-    },
-    "navigation.retry": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retry"
-          }
-        }
-      }
-    },
-    "navigation.dismiss": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dismiss"
           }
         }
       }

@@ -45,6 +45,10 @@ final class ShiftCardModel {
         await perform { () async throws(RepositoryError) in try await self.shiftRepository.endShift() }
     }
 
+    func reopenShift() async {
+        await perform { () async throws(RepositoryError) in try await self.shiftRepository.reopenShift() }
+    }
+
     func dismissActionFailure() {
         actionFailure = nil
     }
