@@ -66,28 +66,36 @@ let package = Package(
         target(
             "FeatureDashboard",
             layer: .features,
-            dependencies: ["Domain", "DesignSystem"],
+            dependencies: [
+                "Domain", "DesignSystem", "DomainTestSupport",
+            ],
             resources: [.process("Resources")],
             isolatedToMainActor: true
         ),
         target(
             "FeatureDelivery",
             layer: .features,
-            dependencies: ["Domain", "DesignSystem"],
+            dependencies: [
+                "Domain", "DesignSystem", "DomainTestSupport",
+            ],
             resources: [.process("Resources")],
             isolatedToMainActor: true
         ),
         target(
             "FeatureHistory",
             layer: .features,
-            dependencies: ["Domain", "DesignSystem"],
+            dependencies: [
+                "Domain", "DesignSystem", "DomainTestSupport",
+            ],
             resources: [.process("Resources")],
             isolatedToMainActor: true
         ),
         target(
             "FeatureSettings",
             layer: .features,
-            dependencies: ["Domain", "DesignSystem"],
+            dependencies: [
+                "Domain", "DesignSystem", "DomainTestSupport",
+            ],
             resources: [.process("Resources")],
             isolatedToMainActor: true
         ),

@@ -111,3 +111,29 @@ struct ExceptionReportSheet: View {
         }
     }
 }
+
+#if DEBUG
+    private extension ExceptionReportSheet {
+        init(
+            previewDraft: ExceptionDraft,
+            onSave: @escaping (ExceptionReason) -> Void,
+            onCancel: @escaping () -> Void
+        ) {
+            _draft = State(initialValue: previewDraft)
+            self.onSave = onSave
+            self.onCancel = onCancel
+        }
+    }
+
+    #Preview("Customer no show") {
+        ExceptionReportSheet(previewDraft: ExceptionDraft(), onSave: { _ in }, onCancel: {})
+    }
+
+    #Preview("Other with details") {
+        ExceptionReportSheet(
+            previewDraft: ExceptionDraft(choice: .other, details: "Recipient asked for the package to be returned."),
+            onSave: { _ in },
+            onCancel: {}
+        )
+    }
+#endif

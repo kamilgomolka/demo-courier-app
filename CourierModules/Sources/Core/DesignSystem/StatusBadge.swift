@@ -24,3 +24,27 @@ public struct StatusBadge: View {
         .background(tint.opacity(0.15), in: Capsule())
     }
 }
+
+#if DEBUG
+    #Preview("Variants") {
+        VStack(alignment: .leading, spacing: 12) {
+            StatusBadge("New", systemImage: "shippingbox.fill", tint: Palette.accent)
+            StatusBadge("In transit", systemImage: "bicycle", tint: Palette.warning)
+            StatusBadge("Delivered", systemImage: "checkmark.circle.fill", tint: Palette.success)
+            StatusBadge("Exception", systemImage: "exclamationmark.triangle.fill", tint: Palette.danger)
+        }
+        .padding()
+    }
+
+    #Preview("Dark") {
+        StatusBadge("In transit", systemImage: "bicycle", tint: Palette.warning)
+            .preferredColorScheme(.dark)
+            .padding()
+    }
+
+    #Preview("Accessibility") {
+        StatusBadge("Exception", systemImage: "exclamationmark.triangle.fill", tint: Palette.danger)
+            .dynamicTypeSize(.accessibility3)
+            .padding()
+    }
+#endif

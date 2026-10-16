@@ -117,3 +117,36 @@ private struct HistoryRowView: View {
         task.exceptionReason?.displayText ?? task.deliveryAddress
     }
 }
+
+#if DEBUG
+    import DomainTestSupport
+
+    private func historyPreview(_ tasks: [DeliveryTask]) -> some View {
+        let repository = FakeTaskRepository()
+        repository.completed.send(tasks)
+        return NavigationStack {
+            HistoryView(taskRepository: repository)
+        }
+    }
+
+    #Preview("Completed") {
+        historyPreview([
+            .fixture(
+                id: "delivered",
+                status: .delivered,
+                completedAt: Date(timeIntervalSince1970: 1_800_000_000)
+            ),
+            .fixture(
+                id: "exception",
+                status: .exception,
+                exceptionReason: .addressNotFound,
+                syncState: .pending,
+                completedAt: Date(timeIntervalSince1970: 1_799_913_600)
+            ),
+        ])
+    }
+
+    #Preview("Empty") {
+        historyPreview([])
+    }
+#endif

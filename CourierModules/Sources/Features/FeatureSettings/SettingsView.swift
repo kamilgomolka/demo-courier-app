@@ -216,3 +216,42 @@ private struct SyncJobRowView: View {
         }
     }
 }
+
+#if DEBUG
+    import DomainTestSupport
+
+    private func settingsPreview(
+        conditions: NetworkConditions = NetworkConditions(),
+        jobs: [SyncJob] = []
+    ) -> some View {
+        let conditionsStore = FakeNetworkConditionsStore(conditions)
+        let jobRepository = FakeSyncJobRepository()
+        jobRepository.jobs.send(jobs)
+        return NavigationStack {
+            SettingsView(
+                conditionsStore: conditionsStore,
+                jobRepository: jobRepository,
+                syncController: FakeSyncController()
+            )
+        }
+    }
+
+    #Preview("With pending job") {
+        settingsPreview(
+            conditions: NetworkConditions(isOffline: true, latencyRange: 2...5, simulatedFailure: .none),
+            jobs: [
+                SyncJob(
+                    kind: .updateStatus(taskID: "task-1", status: .delivered, exceptionReason: nil),
+                    createdAt: Date(timeIntervalSince1970: 1_800_000_000),
+                    notBefore: Date(timeIntervalSince1970: 1_800_000_300),
+                    attemptCount: 2,
+                    lastFailure: "Request timed out"
+                )
+            ]
+        )
+    }
+
+    #Preview("No pending jobs") {
+        settingsPreview()
+    }
+#endif

@@ -42,3 +42,48 @@ public struct EmptyStateView: View {
         }
     }
 }
+
+#if DEBUG
+    #Preview("With action") {
+        EmptyStateView(
+            systemImage: "shippingbox",
+            title: "No deliveries",
+            message: "New deliveries will appear here.",
+            action: EmptyStateView.Action("Refresh") {}
+        )
+        .frame(width: 320, height: 280)
+        .padding()
+    }
+
+    #Preview("Without action") {
+        EmptyStateView(
+            systemImage: "clock",
+            title: "No history",
+            message: "Completed deliveries will appear here."
+        )
+        .frame(width: 320, height: 280)
+        .padding()
+    }
+
+    #Preview("Dark") {
+        EmptyStateView(
+            systemImage: "shippingbox",
+            title: "No deliveries",
+            message: "New deliveries will appear here."
+        )
+        .preferredColorScheme(.dark)
+        .frame(width: 320, height: 280)
+        .padding()
+    }
+
+    #Preview("Accessibility") {
+        EmptyStateView(
+            systemImage: "shippingbox",
+            title: "No deliveries",
+            message: "New deliveries will appear here."
+        )
+        .dynamicTypeSize(.accessibility3)
+        .frame(width: 320, height: 280)
+        .padding()
+    }
+#endif

@@ -51,3 +51,28 @@ public struct PrimaryButton: View {
         }
     }
 }
+
+#if DEBUG
+    #Preview("Standard") {
+        PrimaryButton("Continue", systemImage: "arrow.right") {}
+            .padding()
+    }
+
+    #Preview("Disabled") {
+        PrimaryButton("Continue", systemImage: "arrow.right") {}
+            .disabled(true)
+            .padding()
+    }
+
+    #Preview("Dark") {
+        PrimaryButton("Continue", systemImage: "arrow.right") {}
+            .preferredColorScheme(.dark)
+            .padding()
+    }
+
+    #Preview("Accessibility") {
+        PrimaryButton("Continue", systemImage: "arrow.right") {}
+            .dynamicTypeSize(.accessibility3)
+            .padding()
+    }
+#endif

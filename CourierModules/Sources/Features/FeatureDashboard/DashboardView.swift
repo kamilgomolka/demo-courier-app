@@ -75,3 +75,43 @@ public struct DashboardView: View {
         }
     }
 }
+
+#if DEBUG
+    import DomainTestSupport
+
+    private func dashboardPreview(
+        summary: ShiftSummary?,
+        queue: [DeliveryTask] = [],
+        loadFailure: SyncError? = nil
+    ) -> some View {
+        let taskRepository = FakeTaskRepository()
+        taskRepository.queue.send(queue)
+        let shiftRepository = FakeShiftRepository()
+        shiftRepository.summary.send(summary)
+        let syncController = FakeSyncController()
+        syncController.loadFailure = loadFailure
+        return NavigationStack {
+            DashboardView(
+                taskRepository: taskRepository,
+                shiftRepository: shiftRepository,
+                syncController: syncController,
+                onSelectTask: { _ in }
+            )
+        }
+    }
+
+    #Preview("Ready") {
+        dashboardPreview(
+            summary: .fixture(status: .active, earnings: 42, completedCount: 1),
+            queue: [.fixture(id: "next")]
+        )
+    }
+
+    #Preview("Loading") {
+        dashboardPreview(summary: nil)
+    }
+
+    #Preview("Failed") {
+        dashboardPreview(summary: nil, loadFailure: .offline)
+    }
+#endif

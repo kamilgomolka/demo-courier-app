@@ -7,11 +7,11 @@ Vocabulary lives in [CONTEXT.md](CONTEXT.md). Decisions live in [Docs/adr/](Docs
 ## Modules (`CourierModules/Sources`)
 
 - `Core/Domain`: models, `TaskStateMachine`, repository protocols. `nonisolated`, depends on nothing.
-- `Core/DomainTestSupport`: fakes, fixtures, `ManualTimeSource`. Linked by test targets only.
+- `Core/DomainTestSupport`: fakes, fixtures, `ManualTimeSource`. Its source compiles only in Debug; linked by test targets and Feature targets to support Debug-only previews.
 - `Core/LocalStorage`: SwiftData schema and the `LocalStore` actor. `@Model` types never leave the module.
 - `Core/SyncEngine`: `SyncActor` (sole outbox consumer) and `MockCourierAPI`. Depends on `Domain` only.
 - `Core/DesignSystem`: tokens, typography, shared views.
-- `Features/Feature{Dashboard,Delivery,History,Settings}`: `@MainActor` by default; depend on `Domain` and `DesignSystem` only, never on each other.
+- `Features/Feature{Dashboard,Delivery,History,Settings}`: `@MainActor` by default; depend on `Domain` and `DesignSystem`, plus `DomainTestSupport` to support Debug-only previews; never on each other.
 - `App/AppNavigation`: composition root, router, tabs. The only module that sees `LocalStorage` and `SyncEngine`.
 
 ## Commands

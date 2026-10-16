@@ -180,3 +180,27 @@ public struct TaskDetailsView: View {
         }
     }
 }
+
+#if DEBUG
+    import DomainTestSupport
+
+    private func taskDetailsPreview(_ task: DeliveryTask) -> some View {
+        let repository = FakeTaskRepository()
+        repository.send(task, for: task.id)
+        return NavigationStack {
+            TaskDetailsView(taskID: task.id, taskRepository: repository, onFinish: {})
+        }
+    }
+
+    #Preview("New") {
+        taskDetailsPreview(.fixture(status: .new))
+    }
+
+    #Preview("In transit") {
+        taskDetailsPreview(.fixture(status: .inTransit))
+    }
+
+    #Preview("Delivered") {
+        taskDetailsPreview(.fixture(status: .delivered))
+    }
+#endif

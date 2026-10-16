@@ -88,3 +88,64 @@ struct TaskQueueView: View {
         }
     }
 }
+
+#if DEBUG
+    import DomainTestSupport
+
+    private func taskQueuePreview(
+        summary: ShiftSummary,
+        queue: [DeliveryTask],
+        isInteractive: Bool
+    ) -> some View {
+        let taskRepository = FakeTaskRepository()
+        taskRepository.queue.send(queue)
+        let shiftRepository = FakeShiftRepository()
+        shiftRepository.summary.send(summary)
+        let shiftCardModel = ShiftCardModel(shiftRepository: shiftRepository, syncController: FakeSyncController())
+        let queueModel = TaskQueueModel(taskRepository: taskRepository)
+        return NavigationStack {
+            TaskQueueView(
+                shiftCardModel: shiftCardModel,
+                queueModel: queueModel,
+                isInteractive: isInteractive,
+                onSelectTask: { _ in }
+            )
+        }
+        .task { await shiftCardModel.run() }
+        .task { await queueModel.run() }
+    }
+
+    #Preview("In transit") {
+        taskQueuePreview(
+            summary: .fixture(status: .active, earnings: 42, completedCount: 1, hasTaskInTransit: true),
+            queue: [
+                .fixture(id: "in-transit", status: .inTransit),
+                .fixture(id: "next", status: .new, sortOrder: 1),
+            ],
+            isInteractive: true
+        )
+    }
+
+    #Preview("Upcoming") {
+        taskQueuePreview(
+            summary: .fixture(status: .active, earnings: 42, completedCount: 1),
+            queue: [
+                .fixture(id: "first", sortOrder: 0),
+                .fixture(id: "second", sortOrder: 1),
+            ],
+            isInteractive: true
+        )
+    }
+
+    #Preview("Empty") {
+        taskQueuePreview(summary: .fixture(status: .active), queue: [], isInteractive: true)
+    }
+
+    #Preview("Shift inactive") {
+        taskQueuePreview(
+            summary: .fixture(status: .scheduled),
+            queue: [.fixture(id: "upcoming")],
+            isInteractive: false
+        )
+    }
+#endif

@@ -53,3 +53,46 @@ struct TaskRowView: View {
         }
     }
 }
+
+#if DEBUG
+    import DomainTestSupport
+
+    #Preview("New") {
+        TaskRowView(task: .fixture(status: .new))
+            .padding()
+    }
+
+    #Preview("In transit") {
+        TaskRowView(task: .fixture(status: .inTransit))
+            .padding()
+    }
+
+    #Preview("Delivered") {
+        TaskRowView(task: .fixture(status: .delivered))
+            .padding()
+    }
+
+    #Preview("Exception") {
+        TaskRowView(task: .fixture(status: .exception, exceptionReason: .customerNoShow))
+            .padding()
+    }
+
+    #Preview("Long address") {
+        var task = DeliveryTask.fixture()
+        task.deliveryAddress = "Apartment 4B, 123 Very Long Street Name, Westminster, London SW1A 1AA"
+        return TaskRowView(task: task)
+            .padding()
+    }
+
+    #Preview("Dark") {
+        TaskRowView(task: .fixture(status: .inTransit))
+            .preferredColorScheme(.dark)
+            .padding()
+    }
+
+    #Preview("Accessibility") {
+        TaskRowView(task: .fixture(status: .new))
+            .dynamicTypeSize(.accessibility3)
+            .padding()
+    }
+#endif
