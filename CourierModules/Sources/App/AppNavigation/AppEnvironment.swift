@@ -23,16 +23,33 @@ final class AppEnvironment {
     static func makeLive(arguments: [String] = ProcessInfo.processInfo.arguments) async -> AppEnvironment? {
         #if DEBUG
             let isUITesting = arguments.contains(uiTestingArgument)
-            let conditionsStore = UserDefaultsNetworkConditionsStore(suiteName: isUITesting ? uiTestingSuiteName : nil)
+            let testSessionID =
+                isUITesting
+                ? ProcessInfo.processInfo.environment["COURIER_UI_TEST_SESSION"].flatMap { UUID(uuidString: $0) } : nil
+            let suiteName = testSessionID.map { "\(uiTestingSuiteName).\($0.uuidString)" } ?? uiTestingSuiteName
+            let conditionsStore = UserDefaultsNetworkConditionsStore(suiteName: isUITesting ? suiteName : nil)
             if isUITesting {
-                conditionsStore.save(NetworkConditions(latencyRange: 0.1...0.3))
+                var conditions = testSessionID == nil ? NetworkConditions() : conditionsStore.load()
+                conditions.latencyRange = 0.1...0.3
+                conditionsStore.save(conditions)
             }
         #else
-            let isUITesting = false
             let conditionsStore = UserDefaultsNetworkConditionsStore()
         #endif
         do {
-            let store = try await CourierStorage.makeStore(isStoredInMemoryOnly: isUITesting)
+            let store: LocalStore
+            #if DEBUG
+                if let testSessionID {
+                    let storeURL = URL.cachesDirectory.appending(
+                        path: "\(uiTestingSuiteName)-\(testSessionID.uuidString).store"
+                    )
+                    store = try await CourierStorage.makeStore(storeURL: storeURL)
+                } else {
+                    store = try await CourierStorage.makeStore(isStoredInMemoryOnly: isUITesting)
+                }
+            #else
+                store = try await CourierStorage.makeStore(isStoredInMemoryOnly: false)
+            #endif
             let api = MockCourierAPI(conditionsStore: conditionsStore)
             let syncActor = SyncActor(
                 jobRepository: store,

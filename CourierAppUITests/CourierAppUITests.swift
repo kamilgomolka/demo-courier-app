@@ -88,6 +88,62 @@ final class CourierAppUITests: XCTestCase {
         XCTAssertFalse(app.buttons["settings.syncNowButton"].isEnabled)
     }
 
+    func testOfflineDeliverySurvivesRelaunchAndSyncsWhenOnline() throws {
+        app.terminate()
+        app.launchEnvironment["COURIER_UI_TEST_SESSION"] = UUID().uuidString
+        app.launch()
+
+        XCTAssertTrue(app.buttons["dashboard.startShiftButton"].waitForExistence(timeout: 10.0))
+        app.buttons["dashboard.startShiftButton"].tap()
+        app.tabBars.buttons["Settings"].tap()
+
+        let simulationPicker = app.buttons["settings.simulatedFailurePicker"]
+        simulationPicker.tap()
+        app.buttons["Offline"].tap()
+        XCTAssertTrue(simulationPicker.label.contains("Offline"), simulationPicker.debugDescription)
+
+        app.tabBars.buttons["Today"].tap()
+        app.buttons["dashboard.taskRow.task-01"].tap()
+        app.buttons["delivery.startButton"].tap()
+        app.buttons["delivery.markDeliveredButton"].tap()
+        app.tabBars.buttons["Activity"].tap()
+
+        let historyRow = app.descendants(matching: .any)["history.row.task-01"]
+        XCTAssertTrue(historyRow.waitForExistence(timeout: 5.0))
+        XCTAssertTrue(app.staticTexts["Waiting to sync"].waitForExistence(timeout: 5.0))
+        app.tabBars.buttons["Settings"].tap()
+
+        let pendingJob = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "settings.job.")
+        ).firstMatch
+        XCTAssertTrue(pendingJob.waitForExistence(timeout: 5.0))
+        let pendingJobIdentifier = pendingJob.identifier
+
+        app.terminate()
+        app.launch()
+
+        XCTAssertTrue(app.buttons["dashboard.endShiftButton"].waitForExistence(timeout: 10.0))
+        XCTAssertFalse(app.buttons["dashboard.taskRow.task-01"].exists)
+        app.tabBars.buttons["Activity"].tap()
+        XCTAssertTrue(historyRow.waitForExistence(timeout: 5.0))
+        XCTAssertTrue(app.staticTexts["Delivered"].exists)
+        XCTAssertTrue(app.staticTexts["Waiting to sync"].exists)
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(simulationPicker.label.contains("Offline"), simulationPicker.debugDescription)
+        XCTAssertTrue(app.descendants(matching: .any)[pendingJobIdentifier].waitForExistence(timeout: 5.0))
+
+        simulationPicker.tap()
+        app.buttons["None"].tap()
+
+        XCTAssertTrue(app.staticTexts["All caught up"].waitForExistence(timeout: 15.0))
+        XCTAssertFalse(pendingJob.exists)
+        XCTAssertFalse(app.buttons["settings.syncNowButton"].isEnabled)
+        app.tabBars.buttons["Activity"].tap()
+        XCTAssertTrue(historyRow.waitForExistence(timeout: 5.0))
+        XCTAssertTrue(app.staticTexts["Delivered"].exists)
+        XCTAssertFalse(app.staticTexts["Waiting to sync"].exists)
+    }
+
     func testShiftCanEndAndReopenAfterConfirmation() throws {
         app.buttons["dashboard.startShiftButton"].tap()
         app.buttons["dashboard.endShiftButton"].tap()

@@ -1,6 +1,6 @@
 # CourierApp
 
-[![CI](https://github.com/kamilgomolka/demo-courier-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/kamilgomolka/demo-courier-v2/actions/workflows/ci.yml)
+[![CI](https://github.com/kamilgomolka/demo-courier-app/actions/workflows/ci.yml/badge.svg)](https://github.com/kamilgomolka/demo-courier-app/actions/workflows/ci.yml)
 [![Swift](https://img.shields.io/badge/Swift-6.3-F05138.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/iOS-26.0%2B-000000.svg)](https://developer.apple.com/ios/)
 [![Xcode](https://img.shields.io/badge/Xcode-26.6-1575F9.svg)](https://developer.apple.com/xcode/)
@@ -8,9 +8,17 @@
 
 An architecture playground for a courier's daily workflow (iPhone only): offline-first, optimistic UI, outbox-based sync, micro-modules in a local Swift package, Swift 6 strict concurrency. Features are kept to the minimum needed to exercise those mechanisms; vocabulary is in [`CONTEXT.md`](CONTEXT.md) and architectural decisions are in [`Docs/adr`](Docs/adr).
 
+## Demo
+
+| Today | Delivery details | Sync simulation & outbox |
+| --- | --- | --- |
+| _Screenshot placeholder_ | _Screenshot placeholder_ | _Screenshot placeholder_ |
+
+_Recording placeholder: go offline → complete a delivery → inspect the pending outbox → relaunch → go online → watch the outbox drain._
+
 ## What It Shows
 
-- **Offline-first with an outbox.** Every mutation is written to SwiftData and enqueues a `SyncJob` in the same transaction. The UI only ever reads local state.
+- **Offline-first with an outbox.** Every task mutation is written to SwiftData and enqueues a `SyncJob` in the same transaction. Shift mutations stay local. The UI only ever reads local state.
 - **Single outbox consumer.** `SyncActor` wakes at the earliest `notBefore`, drains FIFO, sends each job at most once per cycle and uses the job id as `Idempotency-Key` (at-least-once delivery, idempotent server).
 - **Delayed commit with Undo.** "Mark Delivered" holds its sync job for 5 s (`SyncPolicy.undoWindow`), closes the details screen and shows an app-wide Undo toast. Undo removes the job; expiry releases it even if the toast is no longer visible.
 - **Debounced reorder.** Drag-and-drop updates the queue optimistically; consecutive moves coalesce into one job whose deadline slides forward.
@@ -49,7 +57,7 @@ CourierModules/              # Local Swift package
 ├── Sources/
 │   ├── Core/
 │   │   ├── Domain/          # Models, state machine, repository protocols (nonisolated)
-│   │   ├── DomainTestSupport/ # Fakes, fixtures, manual clock (test targets only)
+│   │   ├── DomainTestSupport/ # Fakes, fixtures, manual clock (tests and Debug-only previews)
 │   │   ├── LocalStorage/    # SwiftData schema and the LocalStore actor
 │   │   ├── SyncEngine/      # SyncActor and the mock API (static JSON, latency, simulated failures)
 │   │   └── DesignSystem/    # Color tokens, typography, reusable views
@@ -82,14 +90,14 @@ Features do not know each other. Dashboard reports `onSelectTask(id)`, `AppNavig
 ## Getting Started
 
 ```bash
-git clone https://github.com/kamilgomolka/demo-courier-v2.git
-cd demo-courier-v2
+git clone https://github.com/kamilgomolka/demo-courier-app.git
+cd demo-courier-app
 open CourierApp.xcodeproj
 ```
 
 Run the `CourierApp` scheme on an iOS 26+ Simulator. Signing is not required for the Simulator. For a device, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set your Team ID (the file is untracked).
 
-Launching with `--ui-testing` uses an in-memory store and short mock latency.
+Launching a Debug build with `--ui-testing` uses an in-memory store and short mock latency. Setting `COURIER_UI_TEST_SESSION` to a UUID additionally selects an isolated disk store in the app's caches directory and a matching settings suite; reusing the UUID preserves both across relaunches. The offline/relaunch UI test uses this mode.
 
 ## Tooling
 
@@ -106,7 +114,7 @@ make lint          # swift-format --strict, no changes
 make destinations  # list available Simulator destinations
 ```
 
-Override the Simulator with `make build SIMULATOR='iPhone 17 Pro' OS=26.5`. If `xcode-select` points at another Xcode, prefix commands with `DEVELOPER_DIR=/Applications/Xcode_26_6.app/Contents/Developer`.
+Override the Simulator with `make build SIMULATOR='iPhone 17 Pro' OS=26.5`. If `xcode-select` points at another Xcode, prefix commands with `DEVELOPER_DIR=/Applications/Xcode_26.6.app/Contents/Developer`, adjusting the path to your installed Xcode.
 
 Manual log inspection: `xcrun simctl spawn booted log stream --predicate 'subsystem == "com.kamilgomolka.CourierApp"'`.
 

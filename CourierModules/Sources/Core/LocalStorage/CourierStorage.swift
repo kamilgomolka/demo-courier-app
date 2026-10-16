@@ -11,6 +11,14 @@ public enum CourierStorage {
         return LocalStore(modelContainer: container, timeSource: timeSource)
     }
 
+    @concurrent public static func makeStore(
+        storeURL: URL,
+        timeSource: any TimeSource = SystemTimeSource()
+    ) async throws(RepositoryError) -> LocalStore {
+        let container = try makeContainer(storeURL: storeURL)
+        return LocalStore(modelContainer: container, timeSource: timeSource)
+    }
+
     public static func makeContainer(isStoredInMemoryOnly: Bool) throws(RepositoryError) -> ModelContainer {
         let schema = Schema(versionedSchema: CourierSchemaV1.self)
         let configuration =
