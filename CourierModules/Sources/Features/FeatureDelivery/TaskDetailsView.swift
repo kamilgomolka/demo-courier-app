@@ -152,7 +152,7 @@ public struct TaskDetailsView: View {
                 Text(.deliveryDetailsCompletionPrompt)
                     .font(Typography.caption)
                     .foregroundStyle(Palette.textSecondary)
-                PrimaryButton(.deliveryDetailsMarkDeliveredButton, systemImage: "checkmark", role: .success) {
+                PrimaryButton(.deliveryDetailsMarkDeliveredButton, systemImage: "checkmark") {
                     Task { await model.markDelivered() }
                 }
                 .disabled(model.isPerformingAction)
@@ -165,7 +165,17 @@ public struct TaskDetailsView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .foregroundStyle(Palette.danger)
-                        .background(Palette.danger.opacity(0.08), in: RoundedRectangle(cornerRadius: 18))
+                        .background(
+                            LinearGradient(
+                                colors: [
+                                    Palette.danger.opacity(0.08),
+                                    Palette.danger.mix(with: .black, by: 0.35).opacity(0.08),
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            in: RoundedRectangle(cornerRadius: 18)
+                        )
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier(DeliveryAccessibility.reportExceptionButton)

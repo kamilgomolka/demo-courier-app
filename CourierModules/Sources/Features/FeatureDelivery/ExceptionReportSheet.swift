@@ -52,7 +52,7 @@ struct ExceptionReportSheet: View {
                             .labelStyle(.titleAndIcon)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(Palette.success)
+                    .tint(Palette.accent)
                     .disabled(draft.reason == nil)
                     .accessibilityIdentifier(DeliveryAccessibility.exceptionSaveButton)
                 }

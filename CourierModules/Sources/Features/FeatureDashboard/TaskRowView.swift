@@ -48,7 +48,7 @@ struct TaskRowView: View {
         switch task.status {
         case .new: Palette.accent
         case .inTransit: Palette.warning
-        case .delivered: Palette.success
+        case .delivered: Palette.accent
         case .exception: Palette.warning
         }
     }

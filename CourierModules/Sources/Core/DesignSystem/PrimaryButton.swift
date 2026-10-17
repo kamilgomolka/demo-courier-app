@@ -4,25 +4,17 @@ public struct PrimaryButton: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var feedbackTrigger = false
 
-    public enum Role {
-        case standard
-        case success
-    }
-
     private let title: LocalizedStringResource
     private let systemImage: String?
-    private let role: Role
     private let action: () -> Void
 
     public init(
         _ title: LocalizedStringResource,
         systemImage: String? = nil,
-        role: Role = .standard,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.systemImage = systemImage
-        self.role = role
         self.action = action
     }
 
@@ -42,26 +34,14 @@ public struct PrimaryButton: View {
             .foregroundStyle(colorScheme == .dark ? Color.black : Color.white)
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(MintButtonStyle(colors: colors, glow: tint))
+        .buttonStyle(MintButtonStyle(colors: colors, glow: Palette.accent))
         .sensoryFeedback(.impact(weight: .medium), trigger: feedbackTrigger)
     }
 
     private var colors: [Color] {
-        switch role {
-        case .standard:
-            colorScheme == .dark
-                ? [Palette.accent, Palette.mint]
-                : [Palette.mint, Color(red: 0, green: 122 / 255, blue: 80 / 255)]
-        case .success:
-            [Palette.success, Palette.success]
-        }
-    }
-
-    private var tint: Color {
-        switch role {
-        case .standard: Palette.accent
-        case .success: Palette.success
-        }
+        colorScheme == .dark
+            ? [Palette.accent, Palette.mint]
+            : [Palette.mint, Color(red: 0, green: 122 / 255, blue: 80 / 255)]
     }
 }
 

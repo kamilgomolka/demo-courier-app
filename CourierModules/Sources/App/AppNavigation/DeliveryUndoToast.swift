@@ -9,7 +9,7 @@ struct DeliveryUndoToast: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(Palette.success)
+                .foregroundStyle(Palette.accent)
             VStack(alignment: .leading, spacing: 2) {
                 Text(.navigationUndoToastDelivered(pendingUndo.task.recipientName))
                     .font(Typography.headline)

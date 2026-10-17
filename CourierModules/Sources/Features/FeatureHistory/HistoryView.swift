@@ -94,7 +94,7 @@ private struct HistoryRowView: View {
                 }
                 .stroke(Palette.textSecondary.opacity(0.32), lineWidth: 2)
                 Circle()
-                    .fill(task.status == .exception ? Palette.danger : Palette.success)
+                    .fill(task.status == .exception ? Palette.danger : Palette.accent)
                     .frame(width: 12, height: 12)
                     .position(x: 8, y: 28)
             }
@@ -107,9 +107,9 @@ private struct HistoryRowView: View {
         case .exception:
             StatusBadge(.historyBadgeException, systemImage: "exclamationmark.triangle.fill", tint: Palette.danger)
         case .new, .inTransit:
-            StatusBadge(.historyBadgeDelivered, systemImage: "checkmark.circle.fill", tint: Palette.success)
+            StatusBadge(.historyBadgeDelivered, systemImage: "checkmark.circle.fill", tint: Palette.accent)
         case .delivered:
-            StatusBadge(.historyBadgeDelivered, systemImage: "checkmark.circle.fill", tint: Palette.success)
+            StatusBadge(.historyBadgeDelivered, systemImage: "checkmark.circle.fill", tint: Palette.accent)
         }
     }
 

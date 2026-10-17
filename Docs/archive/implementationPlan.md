@@ -267,10 +267,10 @@ The progress bar is powered by `ProgressView(timerInterval:countsDown:)` bound t
 
 `DesignSystem` is introduced during Phase 4a and expands alongside feature development. It is untouched during Phase 1.
 
-- `Colors.xcassets` (starting Phase 4a): Semantic tokens (`BackgroundPrimary`, `SurfaceCard`, `TextPrimary`, `TextSecondary`, `Accent`, `Success`, `Danger`, `Warning`) with Any and Dark appearances. Tokens are added strictly as needed.
+- `Colors.xcassets` (starting Phase 4a): Semantic tokens (`BackgroundPrimary`, `SurfaceCard`, `TextPrimary`, `TextSecondary`, `Accent`, `Danger`, `Warning`) with Any and Dark appearances. Tokens are added strictly as needed.
 - `Images.xcassets`: Created only once the first image appears (icons come from SF Symbols, so none for now).
 - Typography: Semantic roles mapped directly to system styles (`.title`, `.headline`, `.body`, `.caption`), with full Dynamic Type support.
-- Component library added on demand: `PrimaryButton` and `EmptyStateView` (Phase 4a), `success` and `destructive` button variants (Phase 4b), `StatusBadge` (Phase 6). Components accept `LocalizedStringResource` and contain zero business logic. All public APIs include DocC (`///`) documentation.
+- Component library added on demand: `PrimaryButton` and `EmptyStateView` (Phase 4a), `StatusBadge` (Phase 6). `PrimaryButton` uses the accent gradient. Components accept `LocalizedStringResource` and contain zero business logic. All public APIs include DocC (`///`) documentation.
 
 ### 4.10 Localization
 
@@ -361,7 +361,7 @@ Migrate the project from the monolithic single-target template to the modular ar
 ### Phase 4b: Delivery (Vertical Slice)
 
 - [x] `FeatureDelivery` (including string catalog): `TaskDetailsModel`, view implementation (handling `new`, `inTransit`, and `delivered` with the Undo progress bar and `Done` action), and `ExceptionReportSheet` (four radio selections with mandatory input validation when `Other` is selected).
-- [x] `DesignSystem`: Add `success` and `destructive` style variants to `PrimaryButton`.
+- [x] `DesignSystem`: Use the accent gradient for `PrimaryButton`.
 - [x] `AppNavigation`: Configure `navigationDestination` mapping, auto-dismissal on countdown expiry, explicit `commitDelivery` on `Done`, and fallback execution in `onDisappear`.
 - [x] Unit tests: In-place state transitions without popping the view, Undo execution inside the active window, `Done` committing delivery, fallback verification (asserting no-op if Undo or commit already ran), and validation rules for `Other`.
 - [x] Review integration points and freeze `Domain` protocols.

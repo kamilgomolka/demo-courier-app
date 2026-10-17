@@ -30,7 +30,7 @@ public struct StatusBadge: View {
         VStack(alignment: .leading, spacing: 12) {
             StatusBadge("New", systemImage: "shippingbox.fill", tint: Palette.accent)
             StatusBadge("In transit", systemImage: "bicycle", tint: Palette.warning)
-            StatusBadge("Delivered", systemImage: "checkmark.circle.fill", tint: Palette.success)
+            StatusBadge("Delivered", systemImage: "checkmark.circle.fill", tint: Palette.accent)
             StatusBadge("Exception", systemImage: "exclamationmark.triangle.fill", tint: Palette.danger)
         }
         .padding()

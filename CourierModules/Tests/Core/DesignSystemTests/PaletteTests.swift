@@ -10,7 +10,6 @@ struct PaletteTests {
         case textPrimary
         case textSecondary
         case accent
-        case success
         case danger
         case warning
     }
@@ -22,7 +21,6 @@ struct PaletteTests {
         case .textPrimary: Palette.textPrimary
         case .textSecondary: Palette.textSecondary
         case .accent: Palette.accent
-        case .success: Palette.success
         case .danger: Palette.danger
         case .warning: Palette.warning
         }
