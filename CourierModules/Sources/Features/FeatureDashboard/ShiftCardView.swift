@@ -142,33 +142,37 @@ struct ShiftCardView: View {
 #if DEBUG
     import DomainTestSupport
 
-    private func shiftCardPreview(_ summary: ShiftSummary) -> some View {
-        let repository = FakeShiftRepository()
-        repository.summary.send(summary)
-        let model = ShiftCardModel(shiftRepository: repository, syncController: FakeSyncController())
-        return ShiftCardView(model: model)
-            .task { await model.run() }
-            .padding()
+    struct ShiftCardPreview: View {
+        private let model: ShiftCardModel
+
+        init(_ summary: ShiftSummary) {
+            model = ShiftCardModel(previewSummary: summary)
+        }
+
+        var body: some View {
+            ShiftCardView(model: model)
+                .padding()
+        }
     }
 
     #Preview("Scheduled") {
-        shiftCardPreview(.fixture(status: .scheduled))
+        ShiftCardPreview(.fixture(status: .scheduled))
     }
 
     #Preview("Active") {
-        shiftCardPreview(.fixture(status: .active, earnings: 42, completedCount: 2))
+        ShiftCardPreview(.fixture(status: .active, earnings: 42, completedCount: 2))
     }
 
     #Preview("Active, in transit") {
-        shiftCardPreview(.fixture(status: .active, earnings: 42, completedCount: 2, hasTaskInTransit: true))
+        ShiftCardPreview(.fixture(status: .active, earnings: 42, completedCount: 2, hasTaskInTransit: true))
     }
 
     #Preview("Finished") {
-        shiftCardPreview(.fixture(status: .finished, earnings: 84, completedCount: 3, totalCount: 3))
+        ShiftCardPreview(.fixture(status: .finished, earnings: 84, completedCount: 3, totalCount: 3))
     }
 
     #Preview("Dark") {
-        shiftCardPreview(.fixture(status: .active, earnings: 42, completedCount: 2))
+        ShiftCardPreview(.fixture(status: .active, earnings: 42, completedCount: 2))
             .preferredColorScheme(.dark)
     }
 #endif

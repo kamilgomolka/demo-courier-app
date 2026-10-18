@@ -94,3 +94,16 @@ final class ShiftCardModel {
         }
     }
 }
+
+#if DEBUG
+    import DomainTestSupport
+
+    extension ShiftCardModel {
+        convenience init(previewSummary: ShiftSummary) {
+            let repository = FakeShiftRepository()
+            repository.summary.send(previewSummary)
+            self.init(shiftRepository: repository, syncController: FakeSyncController())
+            apply(previewSummary)
+        }
+    }
+#endif
