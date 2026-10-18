@@ -5,13 +5,13 @@ import Testing
 
 @testable import FeatureSettings
 
-struct SettingsModelTests {
+struct SettingsViewModelTests {
     private let conditionsStore = FakeNetworkConditionsStore()
     private let jobRepository = FakeSyncJobRepository()
     private let syncController = FakeSyncController()
 
-    private func makeModel() -> SettingsModel {
-        SettingsModel(
+    private func makeModel() -> SettingsViewModel {
+        SettingsViewModel(
             conditionsStore: conditionsStore,
             jobRepository: jobRepository,
             syncController: syncController

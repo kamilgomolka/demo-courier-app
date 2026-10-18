@@ -4,12 +4,12 @@ import Testing
 
 @testable import FeatureDashboard
 
-struct ShiftCardModelTests {
+struct ShiftCardViewModelTests {
     private let shiftRepository = FakeShiftRepository()
     private let syncController = FakeSyncController()
 
-    private func makeModel() -> ShiftCardModel {
-        ShiftCardModel(shiftRepository: shiftRepository, syncController: syncController)
+    private func makeModel() -> ShiftCardViewModel {
+        ShiftCardViewModel(shiftRepository: shiftRepository, syncController: syncController)
     }
 
     @Test func startsInLoadingPhase() {

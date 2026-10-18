@@ -3,10 +3,10 @@ public import Domain
 public import SwiftUI
 
 public struct HistoryView: View {
-    @State private var model: HistoryModel
+    @State private var model: HistoryViewModel
 
     public init(taskRepository: any TaskRepository) {
-        _model = State(initialValue: HistoryModel(taskRepository: taskRepository))
+        _model = State(initialValue: HistoryViewModel(taskRepository: taskRepository))
     }
 
     public var body: some View {

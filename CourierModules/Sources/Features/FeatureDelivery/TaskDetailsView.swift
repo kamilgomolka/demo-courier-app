@@ -3,7 +3,7 @@ public import Domain
 public import SwiftUI
 
 public struct TaskDetailsView: View {
-    @State private var model: TaskDetailsModel
+    @State private var model: TaskDetailsViewModel
     @State private var isExceptionSheetPresented = false
 
     public init(
@@ -13,7 +13,7 @@ public struct TaskDetailsView: View {
         onFinish: @escaping () -> Void
     ) {
         _model = State(
-            initialValue: TaskDetailsModel(
+            initialValue: TaskDetailsViewModel(
                 taskID: taskID,
                 taskRepository: taskRepository,
                 onDeliveryMarked: onDeliveryMarked,

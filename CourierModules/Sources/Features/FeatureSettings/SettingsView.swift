@@ -3,7 +3,7 @@ public import Domain
 public import SwiftUI
 
 public struct SettingsView: View {
-    @State private var model: SettingsModel
+    @State private var model: SettingsViewModel
     @State private var isResetConfirmationPresented = false
 
     public init(
@@ -12,7 +12,7 @@ public struct SettingsView: View {
         syncController: any SyncControlling
     ) {
         _model = State(
-            initialValue: SettingsModel(
+            initialValue: SettingsViewModel(
                 conditionsStore: conditionsStore,
                 jobRepository: jobRepository,
                 syncController: syncController
@@ -156,7 +156,7 @@ public struct SettingsView: View {
     }
 
     private func latencyStepper(title: LocalizedStringResource, value: Binding<Double>) -> some View {
-        Stepper(value: value, in: SettingsModel.latencyBounds, step: 0.5) {
+        Stepper(value: value, in: SettingsViewModel.latencyBounds, step: 0.5) {
             HStack {
                 Text(title)
                 Spacer()

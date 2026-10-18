@@ -255,7 +255,7 @@ The progress bar is powered by `ProgressView(timerInterval:countsDown:)` bound t
 - A root `TabView` manages three tabs, each wrapping an independent `NavigationStack(path:)`. A single `@Observable` router inside `AppNavigation` retains path state.
 - Feature modules remain decoupled from one another. The Dashboard module emits `onSelectTask(id)`, the navigation router pushes `DashboardRoute.taskDetails(id)`, and a `navigationDestination` resolves the view from `FeatureDelivery`. `TaskDetails` requests dismissal through an `onFinish` closure.
 - Tapping `Done` explicitly triggers `commitDelivery`. `onDisappear` acts as a fallback handler (idempotent no-op if Undo, auto-pop, or commit has already executed).
-- **Dashboard:** Uses a decoupled `ShiftCardView` (backed by its own `@Observable ShiftCardModel` and stream) alongside the task list (`TaskQueueModel`). UI models only assign new values when snapshots differ (`@Observable` does not perform automatic equality diffing). Shift metric updates do not cause task list row invalidations.
+- **Dashboard:** Uses a decoupled `ShiftCardView` (backed by its own `@Observable ShiftCardViewModel` and stream) alongside the task list (`TaskQueueViewModel`). UI models only assign new values when snapshots differ (`@Observable` does not perform automatic equality diffing). Shift metric updates do not cause task list row invalidations.
 - Inactive shifts (`scheduled` or `finished`): Rows are marked `.disabled` with reduced `opacity`, allowing list scrolling while hiding the `EditButton`. This is purely presentation-layer enforcement, as business rules are guaranteed by `LocalStore`.
 - Queue reordering: Utilizes `List` with `.onMove` constrained to the `new` section, toggled via `EditButton` in the navigation toolbar. Does not display blocking loading spinners during drag-and-drop or sync events. Debouncing is handled via job `notBefore` holds and `SyncActor` wake-up scheduling. UI models do not manage sync timers.
 - Initial loading states: A spinner appears only when launching with an empty database (initial cold start or following a reset). Initialization failures present an `EmptyStateView` with retry support. No pull-to-refresh.
@@ -354,13 +354,13 @@ Migrate the project from the monolithic single-target template to the modular ar
 - [x] `DesignSystem`: Initialize `Colors.xcassets` with required tokens, typography styles, `PrimaryButton`, `EmptyStateView`, and light/dark appearance resolution unit tests.
 - [x] `AppNavigation`: `AppEnvironment` wiring (coordinating the SwiftData container, `LocalStore`, `SyncActor`, `MockCourierAPI`, and settings store), `RootView` shell, three navigation stacks, central router, placeholder views for History and Settings, and lifecycle triggers for `launch` and `foreground` (`scenePhase`).
 - [x] Configure `App.swift` to mount `RootView`. `RootView` lazily spins up `AppEnvironment` inside `.task`, presenting an `EmptyStateView` upon failure (no `try!`).
-- [x] `FeatureDashboard` (including `Localizable.xcstrings`): `ShiftCardModel` and view, `TaskQueueModel` and list view, loading/error (retry)/empty states, row `.disabled` state enforcement during inactive shifts, and shift start/finish actions with `inTransit` guards.
+- [x] `FeatureDashboard` (including `Localizable.xcstrings`): `ShiftCardViewModel` and view, `TaskQueueViewModel` and list view, loading/error (retry)/empty states, row `.disabled` state enforcement during inactive shifts, and shift start/finish actions with `inTransit` guards.
 - [x] View model unit tests backed by `DomainTestSupport` fakes (including stream cancellation validation).
 - Functional verification: App launches, seeds data from the mock fixture (with loading indicator), and renders the shift card alongside the task list.
 
 ### Phase 4b: Delivery (Vertical Slice)
 
-- [x] `FeatureDelivery` (including string catalog): `TaskDetailsModel`, view implementation (handling `new`, `inTransit`, and `delivered` with the Undo progress bar and `Done` action), and `ExceptionReportSheet` (four radio selections with mandatory input validation when `Other` is selected).
+- [x] `FeatureDelivery` (including string catalog): `TaskDetailsViewModel`, view implementation (handling `new`, `inTransit`, and `delivered` with the Undo progress bar and `Done` action), and `ExceptionReportSheet` (four radio selections with mandatory input validation when `Other` is selected).
 - [x] `DesignSystem`: Use the accent gradient for `PrimaryButton`.
 - [x] `AppNavigation`: Configure `navigationDestination` mapping, auto-dismissal on countdown expiry, explicit `commitDelivery` on `Done`, and fallback execution in `onDisappear`.
 - [x] Unit tests: In-place state transitions without popping the view, Undo execution inside the active window, `Done` committing delivery, fallback verification (asserting no-op if Undo or commit already ran), and validation rules for `Other`.
@@ -375,7 +375,7 @@ Migrate the project from the monolithic single-target template to the modular ar
 
 ### Phase 6: History (Vertical Slice)
 
-- [x] `FeatureHistory` (including string catalog): `HistoryModel`, daily date grouping, `StatusBadge` integration in `DesignSystem` (displaying "Pending sync"), and subtitle presentation of exception reasons.
+- [x] `FeatureHistory` (including string catalog): `HistoryViewModel`, daily date grouping, `StatusBadge` integration in `DesignSystem` (displaying "Pending sync"), and subtitle presentation of exception reasons.
 - [x] Unit tests verifying section grouping, reverse-chronological sorting, and proper formatting for `Other` exception details.
 
 ### Phase 7: Settings (Vertical Slice)

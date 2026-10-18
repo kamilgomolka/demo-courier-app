@@ -5,7 +5,7 @@ import Testing
 
 @testable import FeatureHistory
 
-struct HistoryModelTests {
+struct HistoryViewModelTests {
     private let taskRepository = FakeTaskRepository()
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -14,8 +14,8 @@ struct HistoryModelTests {
     }()
     private var midnight: Date { calendar.startOfDay(for: Date(timeIntervalSince1970: 1_800_000_000)) }
 
-    private func makeModel() -> HistoryModel {
-        HistoryModel(taskRepository: taskRepository, calendar: calendar)
+    private func makeModel() -> HistoryViewModel {
+        HistoryViewModel(taskRepository: taskRepository, calendar: calendar)
     }
 
     private func completed(_ id: TaskID, hoursAfterMidnight: Double, dayOffset: Int = 0) -> DeliveryTask {

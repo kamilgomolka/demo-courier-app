@@ -3,7 +3,7 @@ import Domain
 import SwiftUI
 
 struct ShiftCardView: View {
-    let model: ShiftCardModel
+    let model: ShiftCardViewModel
     @Environment(\.colorScheme) private var colorScheme
     @State private var isEndConfirmationPresented = false
 
@@ -143,10 +143,10 @@ struct ShiftCardView: View {
     import DomainTestSupport
 
     struct ShiftCardPreview: View {
-        private let model: ShiftCardModel
+        private let model: ShiftCardViewModel
 
         init(_ summary: ShiftSummary) {
-            model = ShiftCardModel(previewSummary: summary)
+            model = ShiftCardViewModel(previewSummary: summary)
         }
 
         var body: some View {

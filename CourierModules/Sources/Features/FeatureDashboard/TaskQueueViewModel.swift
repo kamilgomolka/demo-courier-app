@@ -3,7 +3,7 @@ import Observation
 import SwiftUI
 
 @Observable
-final class TaskQueueModel {
+final class TaskQueueViewModel {
     private(set) var taskInTransit: DeliveryTask?
     private(set) var upcomingTasks: [DeliveryTask] = []
     private(set) var failure: RepositoryError?

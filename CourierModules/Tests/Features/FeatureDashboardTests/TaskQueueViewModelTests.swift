@@ -5,11 +5,11 @@ import Testing
 
 @testable import FeatureDashboard
 
-struct TaskQueueModelTests {
+struct TaskQueueViewModelTests {
     private let taskRepository = FakeTaskRepository()
 
-    private func makeModel() -> TaskQueueModel {
-        TaskQueueModel(taskRepository: taskRepository)
+    private func makeModel() -> TaskQueueViewModel {
+        TaskQueueViewModel(taskRepository: taskRepository)
     }
 
     private func sendQueue(inTransit: Bool = false) {

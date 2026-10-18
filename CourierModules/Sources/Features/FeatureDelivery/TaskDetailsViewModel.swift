@@ -2,7 +2,7 @@ import Domain
 import Observation
 
 @Observable
-final class TaskDetailsModel {
+final class TaskDetailsViewModel {
     private(set) var task: DeliveryTask?
     private(set) var failure: RepositoryError?
     private(set) var isPerformingAction = false

@@ -13,20 +13,20 @@ private final class FinishRecorder {
     }
 }
 
-struct TaskDetailsModelTests {
+struct TaskDetailsViewModelTests {
     private let taskRepository = FakeTaskRepository()
     private let timeSource = ManualTimeSource()
     private let finishRecorder = FinishRecorder()
 
-    private func makeModel() -> TaskDetailsModel {
-        TaskDetailsModel(
+    private func makeModel() -> TaskDetailsViewModel {
+        TaskDetailsViewModel(
             taskID: "task-1",
             taskRepository: taskRepository,
             onFinish: { finishRecorder.record() }
         )
     }
 
-    private func runModel(_ model: TaskDetailsModel, showing task: DeliveryTask) async -> Task<Void, Never> {
+    private func runModel(_ model: TaskDetailsViewModel, showing task: DeliveryTask) async -> Task<Void, Never> {
         taskRepository.send(task, for: "task-1")
         let run = Task { await model.run() }
         _ = await eventually { model.task == task }
@@ -93,7 +93,7 @@ struct TaskDetailsModelTests {
 
     @Test func observedDeliveryReportsTaskAndFinishes() async {
         var reportedTasks: [DeliveryTask] = []
-        let model = TaskDetailsModel(
+        let model = TaskDetailsViewModel(
             taskID: "task-1",
             taskRepository: taskRepository,
             onDeliveryMarked: { reportedTasks.append($0) },

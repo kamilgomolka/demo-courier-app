@@ -10,7 +10,7 @@ struct HistorySection: Equatable, Identifiable {
 }
 
 @Observable
-final class HistoryModel {
+final class HistoryViewModel {
     private(set) var sections: [HistorySection] = []
 
     @ObservationIgnored private let taskRepository: any TaskRepository

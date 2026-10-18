@@ -3,8 +3,8 @@ public import Domain
 public import SwiftUI
 
 public struct DashboardView: View {
-    @State private var shiftCardModel: ShiftCardModel
-    @State private var queueModel: TaskQueueModel
+    @State private var shiftCardModel: ShiftCardViewModel
+    @State private var queueModel: TaskQueueViewModel
     private let syncController: any SyncControlling
     private let onSelectTask: (TaskID) -> Void
 
@@ -15,9 +15,9 @@ public struct DashboardView: View {
         onSelectTask: @escaping (TaskID) -> Void
     ) {
         _shiftCardModel = State(
-            initialValue: ShiftCardModel(shiftRepository: shiftRepository, syncController: syncController)
+            initialValue: ShiftCardViewModel(shiftRepository: shiftRepository, syncController: syncController)
         )
-        _queueModel = State(initialValue: TaskQueueModel(taskRepository: taskRepository))
+        _queueModel = State(initialValue: TaskQueueViewModel(taskRepository: taskRepository))
         self.syncController = syncController
         self.onSelectTask = onSelectTask
     }

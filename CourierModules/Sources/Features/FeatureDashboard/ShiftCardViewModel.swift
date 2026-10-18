@@ -2,7 +2,7 @@ import Domain
 import Observation
 
 @Observable
-final class ShiftCardModel {
+final class ShiftCardViewModel {
     enum Phase: Equatable {
         case loading
         case failed
@@ -98,7 +98,7 @@ final class ShiftCardModel {
 #if DEBUG
     import DomainTestSupport
 
-    extension ShiftCardModel {
+    extension ShiftCardViewModel {
         convenience init(previewSummary: ShiftSummary) {
             let repository = FakeShiftRepository()
             repository.summary.send(previewSummary)

@@ -2,7 +2,7 @@ import Domain
 import Observation
 
 @Observable
-final class SettingsModel {
+final class SettingsViewModel {
     static let latencyBounds: ClosedRange<Double> = 0...10
 
     private(set) var conditions: NetworkConditions

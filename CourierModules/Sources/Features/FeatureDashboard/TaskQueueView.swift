@@ -4,8 +4,8 @@ import SwiftUI
 
 struct TaskQueueView: View {
     @State private var editMode: EditMode = .inactive
-    let shiftCardModel: ShiftCardModel
-    let queueModel: TaskQueueModel
+    let shiftCardModel: ShiftCardViewModel
+    let queueModel: TaskQueueViewModel
     let isInteractive: Bool
     let onSelectTask: (TaskID) -> Void
 
@@ -101,8 +101,8 @@ struct TaskQueueView: View {
         taskRepository.queue.send(queue)
         let shiftRepository = FakeShiftRepository()
         shiftRepository.summary.send(summary)
-        let shiftCardModel = ShiftCardModel(shiftRepository: shiftRepository, syncController: FakeSyncController())
-        let queueModel = TaskQueueModel(taskRepository: taskRepository)
+        let shiftCardModel = ShiftCardViewModel(shiftRepository: shiftRepository, syncController: FakeSyncController())
+        let queueModel = TaskQueueViewModel(taskRepository: taskRepository)
         return NavigationStack {
             TaskQueueView(
                 shiftCardModel: shiftCardModel,
