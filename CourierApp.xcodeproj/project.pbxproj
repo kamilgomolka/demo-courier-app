@@ -29,6 +29,8 @@
 		8E0AB8F2303C493E00F59357 /* TargetCourierAppUITests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = TargetCourierAppUITests.xcconfig; sourceTree = "<group>"; };
 		8E48DB7D30384E7600DE107A /* CourierApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CourierApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E48DB9D30384E7700DE107A /* CourierAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CourierAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8E4C0C3F3087AD9500CB9B03 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		8E4C0C403087AD9500CB9B03 /* CONTEXT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTEXT.md; sourceTree = "<group>"; };
 		8E8A18B43038522E001F4A1B /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		8E8A18B53038522E001F4A1B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		8E8A18B63038522E001F4A1B /* CourierApp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = CourierApp.xctestplan; sourceTree = "<group>"; };
@@ -110,8 +112,10 @@
 				8E48DBA030384E7700DE107A /* CourierAppUITests */,
 				8E31141C307824BB006102B1 /* Docs */,
 				8E8A18B63038522E001F4A1B /* CourierApp.xctestplan */,
-				8E8A18B43038522E001F4A1B /* LICENSE */,
+				8E4C0C3F3087AD9500CB9B03 /* AGENTS.md */,
+				8E4C0C403087AD9500CB9B03 /* CONTEXT.md */,
 				8E8A18B53038522E001F4A1B /* README.md */,
+				8E8A18B43038522E001F4A1B /* LICENSE */,
 				8E48DB7E30384E7600DE107A /* Products */,
 			);
 			sourceTree = "<group>";
