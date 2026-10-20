@@ -21,6 +21,15 @@ Vocabulary lives in [CONTEXT.md](CONTEXT.md). Decisions live in [Docs/adr/](Docs
 - `make test`: package tests plus host UI tests.
 - `make format`: apply `swift-format`. `make lint` is the CI gate.
 
+## Swift block spacing
+
+- Separate adjacent statements with one blank line whenever either contains a multiline brace-delimited block, including closures.
+- Do not insert a blank line before the first statement in a body.
+- Single-line blocks do not require additional spacing.
+- Keep `else`, `catch`, `repeat`/`while` and expression chains attached.
+- For closures with an explicit `in` and a non-empty body, start the body on the next line after `in`, even if it contains only one statement.
+- Run `make format` and `make check` before reporting completion.
+
 ## Invariants the compiler does not enforce
 
 - Business invariants (active shift, single `inTransit` task, undo window) are enforced in `LocalStore`, not in the UI.
