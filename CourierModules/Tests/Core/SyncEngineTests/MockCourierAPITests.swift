@@ -19,7 +19,9 @@ struct MockCourierAPITests {
         MockCourierAPI(
             conditionsStore: FakeNetworkConditionsStore(conditions),
             timeSource: ManualTimeSource(),
-            latency: { _ in 0 }
+            latency: { _ in
+                0
+            }
         )
     }
 
@@ -97,7 +99,9 @@ struct MockCourierAPITests {
         let api = MockCourierAPI(
             conditionsStore: FakeNetworkConditionsStore(),
             timeSource: timeSource,
-            latency: { _ in 2 }
+            latency: { _ in
+                2
+            }
         )
         let job = makeJob()
         let task = Task { await Self.failure(of: job, sentTo: api) }

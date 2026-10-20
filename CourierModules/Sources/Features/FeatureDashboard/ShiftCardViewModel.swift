@@ -38,15 +38,21 @@ final class ShiftCardViewModel {
     }
 
     func startShift() async {
-        await perform { () async throws(RepositoryError) in try await self.shiftRepository.startShift() }
+        await perform { () async throws(RepositoryError) in
+            try await self.shiftRepository.startShift()
+        }
     }
 
     func endShift() async {
-        await perform { () async throws(RepositoryError) in try await self.shiftRepository.endShift() }
+        await perform { () async throws(RepositoryError) in
+            try await self.shiftRepository.endShift()
+        }
     }
 
     func reopenShift() async {
-        await perform { () async throws(RepositoryError) in try await self.shiftRepository.reopenShift() }
+        await perform { () async throws(RepositoryError) in
+            try await self.shiftRepository.reopenShift()
+        }
     }
 
     func dismissActionFailure() {

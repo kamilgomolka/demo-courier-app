@@ -78,7 +78,9 @@ extension LocalStore {
         try transact { () throws(RepositoryError) in
             let shift = try activeShiftRecord()
             guard Set(orderedTaskIDs).count == orderedTaskIDs.count else { throw .invalidTransition }
-            let records = try orderedTaskIDs.map { id throws(RepositoryError) in try taskRecord(id: id) }
+            let records = try orderedTaskIDs.map { id throws(RepositoryError) in
+                try taskRecord(id: id)
+            }
             for record in records {
                 guard record.shiftID == shift.id else { throw .taskNotInActiveShift }
                 guard record.status == .new else { throw .invalidTransition }

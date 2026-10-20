@@ -91,22 +91,32 @@ extension LocalStore {
 
 extension LocalStore: TaskRepository, ShiftRepository, SyncJobRepository, LocalDataResetting {
     public nonisolated func observeQueue() -> AsyncStream<[DeliveryTask]> {
-        observe { store throws(RepositoryError) in try store.queueSnapshot() }
+        observe { store throws(RepositoryError) in
+            try store.queueSnapshot()
+        }
     }
 
     public nonisolated func observeTask(id: TaskID) -> AsyncStream<DeliveryTask?> {
-        observe { store throws(RepositoryError) in try store.taskSnapshot(id: id) }
+        observe { store throws(RepositoryError) in
+            try store.taskSnapshot(id: id)
+        }
     }
 
     public nonisolated func observeCompleted() -> AsyncStream<[DeliveryTask]> {
-        observe { store throws(RepositoryError) in try store.completedSnapshot() }
+        observe { store throws(RepositoryError) in
+            try store.completedSnapshot()
+        }
     }
 
     public nonisolated func observeShiftSummary() -> AsyncStream<ShiftSummary?> {
-        observe { store throws(RepositoryError) in try store.shiftSummarySnapshot() }
+        observe { store throws(RepositoryError) in
+            try store.shiftSummarySnapshot()
+        }
     }
 
     public nonisolated func observeJobs() -> AsyncStream<[SyncJob]> {
-        observe { store throws(RepositoryError) in try store.jobsSnapshot() }
+        observe { store throws(RepositoryError) in
+            try store.jobsSnapshot()
+        }
     }
 }

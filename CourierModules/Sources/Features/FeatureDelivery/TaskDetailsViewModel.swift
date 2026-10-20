@@ -45,12 +45,14 @@ final class TaskDetailsViewModel {
     }
 
     func startDelivery() async {
-        await perform { () async throws(RepositoryError) in try await self.taskRepository.startDelivery(id: self.taskID)
+        await perform { () async throws(RepositoryError) in
+            try await self.taskRepository.startDelivery(id: self.taskID)
         }
     }
 
     func markDelivered() async {
-        await perform { () async throws(RepositoryError) in try await self.taskRepository.markDelivered(id: self.taskID)
+        await perform { () async throws(RepositoryError) in
+            try await self.taskRepository.markDelivered(id: self.taskID)
         }
     }
 

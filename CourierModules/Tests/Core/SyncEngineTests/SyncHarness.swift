@@ -13,7 +13,11 @@ struct FakeSyncHarness {
     let syncActor: SyncActor
 
     init(latency: TimeInterval = 0) {
-        api = MockCourierAPI(conditionsStore: conditions, timeSource: timeSource, latency: { _ in latency })
+        api = MockCourierAPI(
+            conditionsStore: conditions, timeSource: timeSource,
+            latency: { _ in
+                latency
+            })
         syncActor = SyncActor(
             jobRepository: repository,
             localDataResetter: repository,
@@ -53,7 +57,11 @@ struct StoreBackedHarness {
     init(store: LocalStore, timeSource: ManualTimeSource, latency: TimeInterval = 0) {
         self.store = store
         self.timeSource = timeSource
-        api = MockCourierAPI(conditionsStore: conditions, timeSource: timeSource, latency: { _ in latency })
+        api = MockCourierAPI(
+            conditionsStore: conditions, timeSource: timeSource,
+            latency: { _ in
+                latency
+            })
         syncActor = SyncActor(
             jobRepository: store, localDataResetter: store,
             api: api,
