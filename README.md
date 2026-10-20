@@ -1,34 +1,50 @@
 # CourierApp
 
-**Clean iOS architecture with SPM micro-modules and an offline-first delivery workflow.**
+[![Swift](https://img.shields.io/badge/Swift-6.3-F05138.svg)](https://swift.org)
+[![Platform](https://img.shields.io/badge/iOS-26.0%2B-000000.svg)](https://developer.apple.com/ios/)
+[![Xcode](https://img.shields.io/badge/Xcode-26.6-1575F9.svg)](https://developer.apple.com/xcode/)
+[![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
 
-[![CI](https://github.com/kamilgomolka/demo-courier-app/actions/workflows/ci.yml/badge.svg)](https://github.com/kamilgomolka/demo-courier-app/actions/workflows/ci.yml)
+**A scalable blueprint for offline-first iOS application, designed for complex multi-module systems and large engineering teams.**
 
-Small, independently compiled Swift modules, separating domain logic, feature presentation, persistence, and sync. A local Swift package manifest makes dependency boundaries explicit; The app host links a single composition-root product.
+The CourierApp project demonstrates a modern architectural approach to building iOS apps. It utilizes independent Swift Package Manager (SPM) micro-modules, a strict domain-driven design, and an atomic outbox-based synchronization engine. 
 
-Couriers can complete deliveries offline. Each task mutation and its outbox job are persisted in one transaction, survive app termination, and sync when connectivity returns. The workflow exercises module boundaries, concurrency, and failure recovery with SwiftUI, SwiftData, and Swift 6. No third-party dependencies.
+Couriers can complete deliveries seamlessly while completely offline. Each task mutation and its corresponding remote sync job are persisted in a single local transaction, surviving app termination and syncing gracefully when connectivity returns. No third-party dependencies are used.
 
-[Design decisions](#key-design-decisions) · [Module boundaries](#module-boundaries) · [Failure recovery](#failure-recovery) · [Trade-offs](#scope--trade-offs)
+## Screenshots & Demo
 
-## Key Design Decisions
+| Dashboard & Queue | Delivery Details | Exception Reporting | Activity History |
+| :---: | :---: | :---: | :---: |
+| <img src="./Docs/Screenshots/1-Dashboard.png" width="200" alt="Dashboard"> | <img src="./Docs/Screenshots/2-Details.png" width="200" alt="Delivery Details"> | <img src="./Docs/Screenshots/3-Exception.png" width="200" alt="Exception Sheet"> | <img src="./Docs/Screenshots/4-Activity.png" width="200" alt="Activity History"> |
 
-| Problem | Decision | Evidence |
-| --- | --- | --- |
-| Features coupled to persistence or each other | Features depend on `Domain` contracts and `DesignSystem`; `AppNavigation` composes implementations and owns cross-feature navigation. | [Package manifest](CourierModules/Package.swift), [composition root ADR](Docs/adr/0003-composition-root-in-app-navigation.md) |
-| SwiftData leaking into presentation | Repository `AsyncStream`s expose domain snapshots; `@Model` types stay inside `LocalStorage`. | [Observation ADR](Docs/adr/0001-features-observe-streams-not-query.md), [observation tests](CourierModules/Tests/Core/LocalStorageTests/ObservationTests.swift) |
-| Local changes without a corresponding remote write | A single-writer `LocalStore` validates business invariants and writes each task mutation with its `SyncJob` atomically. | [Single-writer ADR](Docs/adr/0006-single-writer-store-enforces-invariants.md), [transition tests](CourierModules/Tests/Core/LocalStorageTests/TaskTransitionTests.swift) |
-| Remote success followed by a lost local acknowledgement | At-least-once delivery replays the persisted job with the same `Idempotency-Key`. | [Outbox ADR](Docs/adr/0004-outbox-at-least-once-with-idempotency-key.md), [replay tests](CourierModules/Tests/Core/SyncEngineTests/SyncResilienceTests.swift) |
-| Undo tied to a screen's lifetime | A persisted `notBefore` holds the job for the Undo window; the sync scheduler releases it independently of UI. | [Undo ADR](Docs/adr/0005-undo-window-as-held-outbox-job.md), [restart tests](CourierModules/Tests/Core/LocalStorageTests/DiskPersistenceTests.swift) |
-| One failed delivery blocking unrelated work | A failed job blocks later jobs for the same `taskID` within a drain; other tasks proceed. Retries require an external trigger. | [Scheduling tests](CourierModules/Tests/Core/SyncEngineTests/SyncSchedulingTests.swift) |
+> *Video placeholder: Completing a delivery offline → inspecting the pending outbox → force quitting the app → relaunching → restoring connection to watch the outbox drain.*
 
-## Module Boundaries
+## Key Capabilities
 
-Arrows show compile-time dependencies. The four feature targets are grouped for readability.
+- **Offline-First with an Atomic Outbox:** Every state mutation is written to SwiftData and enqueues a `SyncJob` in the exact same database transaction. The UI is completely optimistic and only reads local, validated state.
+- **Resilient Sync Engine:** A dedicated `SyncActor` wakes up at scheduled deadlines, drains the outbox queue FIFO, sends each job at most once per cycle, and guarantees at-least-once delivery using the job ID as an `Idempotency-Key`.
+- **Decoupled "Undo" Window:** Tapping "Mark Delivered" holds its sync job for 5 seconds. This countdown is anchored to the persistent `completedAt` timestamp, meaning the Undo window survives view dismissal and even app relaunches.
+- **Optimistic Queue Reordering:** Drag-and-drop updates the stop sequence instantly. Consecutive moves are debounced locally, coalescing into a single network request with a sliding deadline.
+- **Built-in Network Simulation:** The Settings module includes QA tools to force offline mode, simulate network latency ranges, and inject specific HTTP failures (e.g., 401 Unauthorized, 500 Server Error), allowing both automated and manual testing of recovery paths.
+
+## Modern Swift Concurrency
+
+The project is compiled under **Swift 6 language mode** with `Strict Concurrency = Complete` and warnings treated as errors. In order to avoid data races and thread-blocking issues, actor isolation is applied strictly by architectural layer:
+
+- **UI & Features (`@MainActor`):** `DesignSystem`, `Feature*` modules, and `AppNavigation` are isolated to the main thread by default.
+- **Domain (`nonisolated`):** Entities, state machines, and repository protocols are pure `Sendable` structs.
+- **Data & Network (`actor`):** `LocalStore` acts as a single-writer actor managing the SwiftData `ModelContext` off the main thread. `SyncActor` independently manages the outbox queue scheduling and network requests.
+
+Features never query the database directly. They consume `AsyncStream`s of immutable domain snapshots, exposed by repository protocols.
+
+## Architecture & Modularity
+
+Arrows in the diagram represent compile-time dependencies. The package manifest creates a hard boundary preventing features from accidentally coupling to each other or the persistence layer.
 
 ```mermaid
 graph TD
-    Host[CourierApp host] --> AppNavigation
-    AppNavigation --> Features[FeatureDashboard · FeatureDelivery<br/>FeatureHistory · FeatureSettings]
+    Host[CourierApp Host] --> AppNavigation
+    AppNavigation --> [FeatureDashboard ·<br/>FeatureDelivery ·<br/>FeatureHistory ·<br/>FeatureSettings]
     AppNavigation --> LocalStorage
     AppNavigation --> SyncEngine
     AppNavigation --> DesignSystem
@@ -39,40 +55,58 @@ graph TD
     SyncEngine --> Domain
 ```
 
-- **Domain defines the contracts.** Models, `TaskStateMachine`, and repository protocols have no dependencies on other project modules. `LocalStorage` and `SyncEngine` depend only on `Domain`; they do not import each other.
-- **Features own presentation.** Each has its own SPM target, resources, and test target. Features never import one another. `AppNavigation` injects dependencies, owns navigation, and is the only module that imports both storage and sync.
-- **Isolation follows responsibility.** UI modules default to `MainActor`; domain, storage, and sync modules are `nonisolated`. `LocalStore` and `SyncActor` own their mutable state. [Isolation ADR](Docs/adr/0002-default-isolation-per-layer.md).
+- **Domain:** Defines the core contracts. It has absolutely zero dependencies on other modules.
+- **Features:** SPM targets focused purely on UI and presentation logic. **Features never import each other.** Navigation between them is handled via callbacks routed through `AppNavigation`.
+- **AppNavigation (Composition Root):** The only module aware of both `LocalStorage` and `SyncEngine`. It injects real dependencies into feature views and handles app-wide routing.
 
-`DesignSystem` supplies shared tokens and views. `DomainTestSupport` supplies protocol fakes and a manual clock for tests and Debug-only previews; feature targets also depend on it for those previews.
+## Key Design Decisions (ADRs)
 
-## Failure Recovery
+For deep dives into specific engineering problems and their solutions, refer to the Architecture Decision Records in the `Docs/adr/` directory.
 
-Tests exercise failure boundaries at three levels:
+| Problem | Decision | Evidence |
+| --- | --- | --- |
+| Features coupled to persistence or each other | Features depend on `Domain` contracts and `DesignSystem`; `AppNavigation` composes implementations and owns cross-feature navigation. | [Package manifest](CourierModules/Package.swift), [ADR-0003](Docs/adr/0003-composition-root-in-app-navigation.md) |
+| SwiftData leaking into presentation | Repository `AsyncStream`s expose domain snapshots; `@Model` types stay strictly inside `LocalStorage`. | [ADR-0001](Docs/adr/0001-features-observe-streams-not-query.md), [Observation Tests](CourierModules/Tests/Core/LocalStorageTests/ObservationTests.swift) |
+| Local changes losing sync state on crash | A single-writer `LocalStore` validates business invariants and writes each mutation alongside its `SyncJob` atomically. | [ADR-0006](Docs/adr/0006-single-writer-store-enforces-invariants.md), [Transition Tests](CourierModules/Tests/Core/LocalStorageTests/TaskTransitionTests.swift) |
+| Server receives request, local ACK is lost | At-least-once delivery; the engine safely replays the persisted job with the same `Idempotency-Key`. | [ADR-0004](Docs/adr/0004-outbox-at-least-once-with-idempotency-key.md), [Resilience Tests](CourierModules/Tests/Core/SyncEngineTests/SyncResilienceTests.swift) |
+| Undo logic tied to a screen's lifetime | A persisted `notBefore` holds the job for 5s; the background sync scheduler releases it independently of the UI. | [ADR-0005](Docs/adr/0005-undo-window-as-held-outbox-job.md), [Persistence Tests](CourierModules/Tests/Core/LocalStorageTests/DiskPersistenceTests.swift) |
+| One failing delivery blocks unrelated work | A failing job blocks subsequent jobs for *the same task ID* (Head-of-Line blocking), but allows other tasks to proceed. | [Scheduling Tests](CourierModules/Tests/Core/SyncEngineTests/SyncSchedulingTests.swift) |
 
-- **Storage:** reopen a disk-backed store and verify that task state and pending jobs survive, including the held Undo window. [DiskPersistenceTests](CourierModules/Tests/Core/LocalStorageTests/DiskPersistenceTests.swift).
-- **Sync:** replay an unacknowledged write with the same key, drain overdue jobs after restart, and reset during an in-flight request. Scheduling tests drive `ManualTimeSource` to verify deadlines, cancellation, and retry behavior. [SyncResilienceTests](CourierModules/Tests/Core/SyncEngineTests/SyncResilienceTests.swift), [SyncSchedulingTests](CourierModules/Tests/Core/SyncEngineTests/SyncSchedulingTests.swift).
-- **UI:** complete a delivery offline, terminate and relaunch the app with the same disk store, then reconnect and verify the outbox drains. [CourierAppUITests](CourierAppUITests/CourierAppUITests.swift).
+## Scope Boundaries & Trade-offs
 
-## Scope & Trade-offs
+To keep this project focused on architectural patterns, certain boundaries were established:
+- **Mock API:** The "backend" is a bundled JSON snapshot. The `MockCourierAPI` intercepts requests, honors configured latency, and resolves conflicts. Real backend integration is outside the scope of this project.
+- **Foreground Sync Only:** The sync queue drains while the app is active (or upon foregrounding). Background fetch processing (`BGTaskScheduler`) is intentionally omitted.
+- **Last-Write-Wins:** HTTP 409 (Conflict) resolution compares the server's `serverUpdatedAt` with the local job's `createdAt`. A newer server version discards the local write.
 
-- **Mock API:** bundled snapshots and configurable latency/failures make scenarios reproducible. Real backend integration is outside scope.
-- **Foreground sync:** jobs drain while the app runs. Suspension defers delivery until the next foreground; background execution is outside scope.
-- **Last write wins:** HTTP 409 resolution compares timestamps. A newer server version can discard a local write.
-- **Insert-only bootstrap:** initial load seeds an empty database; it does not reconcile later server changes to existing records.
-- **Persisted Undo window:** the job remains held across relaunch, but the Undo toast is not restored.
+## Tooling & Setup
 
-## Tooling
+### Requirements
+- Xcode 26.6+
+- iOS 26.0+ deployment target
 
-Xcode 26.6 · iOS 26+ · Swift 6 language mode · strict concurrency and memory safety · warnings as errors.
+### Getting Started
+1. Clone the repository and open `CourierApp.xcodeproj`.
+2. Run the `CourierApp` scheme on an iOS Simulator (signing is not required). 
 
-Open `CourierApp.xcodeproj` and run the `CourierApp` scheme on an iOS Simulator. The default test destination is iPhone 17 Pro, iOS 26.5; override with `SIMULATOR` and `OS`.
+For a physical device, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set your Apple Developer Team ID. (file is git ignored to avoid publishing private team IDs)
+
+### CLI Commands
+
+The project uses a `Makefile` to streamline local verification and CI pipelines:
 
 ```bash
-make check  # formatting lint, Debug/Release builds, package tests
-make test   # package tests and host UI tests
-make test-module MODULE=SyncEngineTests
+make check         # Quality gate: swift-format lint, Debug/Release builds, package tests
+make test          # Runs all package unit tests followed by Host UI tests
+make test-package  # Runs SPM unit tests only
+make test-module MODULE=SyncEngineTests  # Runs tests for a specific module
+make test-app      # Runs black-box XCTest UI tests
+make format        # Applies swift-format to the codebase
+make destinations  # Lists available simulator destinations
 ```
 
-[CI](.github/workflows/ci.yml) runs lint, package and UI tests, and a Release build. See the [Makefile](Makefile) for individual commands, [CONTEXT.md](CONTEXT.md) for domain vocabulary, and [ADRs](Docs/adr/) for decision details.
+*Note: UI tests (`CourierAppUITests`) run as black-box tests utilizing accessibility identifiers. Setting the environment variable `COURIER_UI_TEST_SESSION` automatically provisions isolated on-disk databases for cross-launch offline testing.*
 
-MIT — see [LICENSE](LICENSE).
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
