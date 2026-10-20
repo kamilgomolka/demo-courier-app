@@ -27,6 +27,7 @@ struct SnapshotPayload: Decodable {
     static func decode(from data: Data) throws(SyncError) -> RemoteSnapshot {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+
         do {
             return try decoder.decode(SnapshotPayload.self, from: data).makeSnapshot()
         } catch {
@@ -39,6 +40,7 @@ struct SnapshotPayload: Decodable {
             guard let payout = Decimal(string: task.payout, locale: Locale(identifier: "en_US_POSIX")) else {
                 throw .decodingFailed
             }
+
             return DeliveryTask(
                 id: task.id,
                 recipientName: task.recipientName,
@@ -51,6 +53,7 @@ struct SnapshotPayload: Decodable {
                 assignedAt: task.assignedAt
             )
         }
+
         return RemoteSnapshot(
             shift: Shift(id: shift.id, status: shift.status, startDate: shift.startDate, endDate: shift.endDate),
             tasks: mappedTasks

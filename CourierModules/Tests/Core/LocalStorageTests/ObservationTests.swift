@@ -32,11 +32,13 @@ struct ObservationTests {
     @Test func streamDoesNotEmitWhenSnapshotIsUnchanged() async throws {
         let fixture = try await StoreFixture.make(startedShift: false)
         let received = Mutex<[[TaskID]]>([])
+
         let consumer = Task {
             for await queue in fixture.store.observeQueue() {
                 received.withLock { $0.append(queue.map(\.id)) }
             }
         }
+
         #expect(await eventually { received.withLock { $0.count } == 1 })
 
         try await fixture.store.startShift()
@@ -50,9 +52,11 @@ struct ObservationTests {
 
     @Test func cancellingConsumerRemovesObserver() async throws {
         let fixture = try await StoreFixture.make()
+
         let consumer = Task {
             for await _ in fixture.store.observeQueue() {}
         }
+
         #expect(await eventually { await fixture.store.activeObserverCount == 1 })
 
         consumer.cancel()
@@ -108,14 +112,19 @@ struct ObservationTests {
         await #expect(throws: RepositoryError.invalidShiftTransition) {
             try await fixture.store.endShift()
         }
+
         try await fixture.store.startShift()
+
         await #expect(throws: RepositoryError.invalidShiftTransition) {
             try await fixture.store.startShift()
         }
+
         try await fixture.store.endShift()
+
         await #expect(throws: RepositoryError.invalidShiftTransition) {
             try await fixture.store.startShift()
         }
+
         let summary = try await fixture.shiftSummary()
         #expect(summary.status == .finished)
     }

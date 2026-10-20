@@ -18,9 +18,11 @@ struct StoreFixture {
         let container = try CourierStorage.makeContainer(isStoredInMemoryOnly: true)
         let store = LocalStore(modelContainer: container, timeSource: timeSource)
         try await store.mergeRemoteSnapshot(snapshot)
+
         if startedShift {
             try await store.startShift()
         }
+
         return StoreFixture(store: store, timeSource: timeSource)
     }
 

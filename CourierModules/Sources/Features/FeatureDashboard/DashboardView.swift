@@ -90,6 +90,7 @@ public struct DashboardView: View {
         shiftRepository.summary.send(summary)
         let syncController = FakeSyncController()
         syncController.loadFailure = loadFailure
+
         return NavigationStack {
             DashboardView(
                 taskRepository: taskRepository,

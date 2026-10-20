@@ -83,6 +83,7 @@ public struct TaskDetailsView: View {
                             .foregroundStyle(Palette.textPrimary)
                             .minimumScaleFactor(0.75)
                     }
+
                     details(of: task)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -109,7 +110,9 @@ public struct TaskDetailsView: View {
                     .font(.system(.title3, design: .rounded, weight: .semibold))
                     .foregroundStyle(Palette.textPrimary)
             }
+
             Divider()
+
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 6) {
                     Label(.deliveryDetailsPackageLabel, systemImage: "shippingbox")
@@ -119,7 +122,9 @@ public struct TaskDetailsView: View {
                         .font(Typography.body)
                         .foregroundStyle(Palette.textPrimary)
                 }
+
                 Spacer(minLength: 8)
+
                 VStack(alignment: .trailing, spacing: 6) {
                     Text(.deliveryDetailsPayoutLabel)
                         .font(Typography.caption)
@@ -143,6 +148,7 @@ public struct TaskDetailsView: View {
                 Text(.deliveryDetailsStartPrompt)
                     .font(Typography.caption)
                     .foregroundStyle(Palette.textSecondary)
+
                 PrimaryButton(.deliveryDetailsStartButton, systemImage: "bicycle") {
                     Task { await model.startDelivery() }
                 }
@@ -152,11 +158,13 @@ public struct TaskDetailsView: View {
                 Text(.deliveryDetailsCompletionPrompt)
                     .font(Typography.caption)
                     .foregroundStyle(Palette.textSecondary)
+
                 PrimaryButton(.deliveryDetailsMarkDeliveredButton, systemImage: "checkmark") {
                     Task { await model.markDelivered() }
                 }
                 .disabled(model.isPerformingAction)
                 .accessibilityIdentifier(DeliveryAccessibility.markDeliveredButton)
+
                 Button {
                     isExceptionSheetPresented = true
                 } label: {
@@ -196,6 +204,7 @@ public struct TaskDetailsView: View {
     private func taskDetailsPreview(_ task: DeliveryTask) -> some View {
         let repository = FakeTaskRepository()
         repository.send(task, for: task.id)
+
         return NavigationStack {
             TaskDetailsView(taskID: task.id, taskRepository: repository, onFinish: {})
         }

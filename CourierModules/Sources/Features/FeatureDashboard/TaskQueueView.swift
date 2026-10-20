@@ -29,6 +29,7 @@ struct TaskQueueView: View {
                     row(for: taskInTransit)
                 }
             }
+
             Section(String(localized: .dashboardQueueUpcomingHeader)) {
                 ForEach(Array(queueModel.upcomingTasks.enumerated()), id: \.element.id) { index, task in
                     row(for: task)
@@ -44,6 +45,7 @@ struct TaskQueueView: View {
                 }
                 .moveDisabled(!isInteractive)
             }
+
             if queueModel.taskInTransit == nil && queueModel.upcomingTasks.isEmpty {
                 EmptyStateView(
                     systemImage: "shippingbox",
@@ -103,6 +105,7 @@ struct TaskQueueView: View {
         shiftRepository.summary.send(summary)
         let shiftCardModel = ShiftCardViewModel(shiftRepository: shiftRepository, syncController: FakeSyncController())
         let queueModel = TaskQueueViewModel(taskRepository: taskRepository)
+
         return NavigationStack {
             TaskQueueView(
                 shiftCardModel: shiftCardModel,

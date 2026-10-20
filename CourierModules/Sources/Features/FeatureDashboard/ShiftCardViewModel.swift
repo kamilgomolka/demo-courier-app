@@ -29,6 +29,7 @@ final class ShiftCardViewModel {
                 await loadInitialData()
                 continue
             }
+
             apply(updatedSummary)
         }
     }
@@ -63,6 +64,7 @@ final class ShiftCardViewModel {
         guard !isPerformingAction else { return }
         isPerformingAction = true
         defer { isPerformingAction = false }
+
         do {
             try await action()
         } catch {
@@ -74,10 +76,13 @@ final class ShiftCardViewModel {
         if summary != updatedSummary {
             summary = updatedSummary
         }
+
         let updatedIsShiftActive = updatedSummary.status == .active
+
         if isShiftActive != updatedIsShiftActive {
             isShiftActive = updatedIsShiftActive
         }
+
         if phase != .ready {
             phase = .ready
         }
@@ -87,6 +92,7 @@ final class ShiftCardViewModel {
         if phase != .loading {
             phase = .loading
         }
+
         while !Task.isCancelled {
             do {
                 try await syncController.loadInitialData()

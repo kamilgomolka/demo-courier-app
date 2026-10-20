@@ -27,6 +27,7 @@ final class TaskQueueViewModel {
         reordered.move(fromOffsets: source, toOffset: destination)
         guard reordered.map(\.id) != previousOrder.map(\.id) else { return }
         upcomingTasks = reordered
+
         do {
             try await taskRepository.reorderQueue(orderedTaskIDs: reordered.map(\.id))
         } catch {
@@ -51,9 +52,11 @@ final class TaskQueueViewModel {
         latestQueue = queue
         let updatedTaskInTransit = queue.first { $0.status == .inTransit }
         let updatedUpcomingTasks = queue.filter { $0.status == .new }
+
         if taskInTransit != updatedTaskInTransit {
             taskInTransit = updatedTaskInTransit
         }
+
         if upcomingTasks != updatedUpcomingTasks {
             upcomingTasks = updatedUpcomingTasks
         }

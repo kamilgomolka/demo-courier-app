@@ -34,18 +34,22 @@
 
         public func sleep(until deadline: Date) async throws {
             let sleeperID = UUID()
+
             try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
                     let immediateOutcome: Result<Void, any Error>? = state.withLock { state in
                         if Task.isCancelled {
                             return .failure(CancellationError())
                         }
+
                         guard deadline > state.current else {
                             return .success(())
                         }
+
                         state.sleepers[sleeperID] = Sleeper(deadline: deadline, continuation: continuation)
                         return nil
                     }
+
                     if let immediateOutcome {
                         continuation.resume(with: immediateOutcome)
                     }
@@ -62,6 +66,7 @@
                 let dueIdentifiers = state.sleepers.filter { $0.value.deadline <= state.current }.keys
                 return dueIdentifiers.compactMap { state.sleepers.removeValue(forKey: $0) }
             }
+
             for sleeper in dueSleepers {
                 sleeper.continuation.resume()
             }

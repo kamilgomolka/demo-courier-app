@@ -46,11 +46,13 @@ public final class MockCourierAPI: CourierAPI {
     public func fetchSnapshot() async throws(SyncError) -> RemoteSnapshot {
         try await respond(method: "GET", path: "/tasks", idempotencyKey: nil, body: nil)
         let data: Data
+
         if let snapshotData {
             data = snapshotData
         } else {
             data = try Self.bundledSnapshotData()
         }
+
         return try SnapshotPayload.decode(from: data)
     }
 
@@ -58,6 +60,7 @@ public final class MockCourierAPI: CourierAPI {
         let method = "PATCH"
         let path: String
         let body: Data
+
         do {
             switch job.kind {
             case .updateStatus(let taskID, let status, let exceptionReason):
@@ -70,6 +73,7 @@ public final class MockCourierAPI: CourierAPI {
         } catch {
             throw .decodingFailed
         }
+
         try await respond(method: method, path: path, idempotencyKey: job.id, body: body, jobCreatedAt: job.createdAt)
     }
 
@@ -81,11 +85,14 @@ public final class MockCourierAPI: CourierAPI {
         jobCreatedAt: Date? = nil
     ) async throws(SyncError) {
         let conditions = conditionsStore.load()
+
         guard !conditions.isOffline else {
             Log.network.info("\(method, privacy: .public) \(path, privacy: .public) failed: offline")
             throw .offline
         }
+
         let delay = latency(conditions.latencyRange)
+
         if delay > 0 {
             do {
                 try await timeSource.sleep(until: timeSource.now().addingTimeInterval(delay))
@@ -93,16 +100,20 @@ public final class MockCourierAPI: CourierAPI {
                 throw .cancelled
             }
         }
+
         recordedRequests.withLock {
             $0.append(Request(method: method, path: path, idempotencyKey: idempotencyKey, body: body))
         }
+
         Log.network.info("\(method, privacy: .public) \(path, privacy: .public) received")
+
         if conditions.simulatedFailure == .conflict, let idempotencyKey, let jobCreatedAt,
             conflictedJobIDs.withLock({ $0.insert(idempotencyKey).inserted })
         {
             Log.network.error("\(method, privacy: .public) \(path, privacy: .public) failed: conflict")
             throw .conflict(serverUpdatedAt: jobCreatedAt.addingTimeInterval(-1))
         }
+
         if let failure = Self.error(for: conditions.simulatedFailure) {
             Log.network.error(
                 "\(method, privacy: .public) \(path, privacy: .public) failed: \(failure.description, privacy: .public)"
@@ -128,6 +139,7 @@ public final class MockCourierAPI: CourierAPI {
         guard let url = Bundle.module.url(forResource: "courier-snapshot", withExtension: "json") else {
             throw .decodingFailed
         }
+
         do {
             return try Data(contentsOf: url)
         } catch {

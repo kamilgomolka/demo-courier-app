@@ -6,6 +6,7 @@ extension DeliveryTaskRecord {
         let decodedReason = try exceptionReasonData.map { data throws(RepositoryError) in
             try Self.decode(ExceptionReason.self, from: data)
         }
+
         return DeliveryTask(
             id: id,
             recipientName: recipientName,
@@ -26,6 +27,7 @@ extension DeliveryTaskRecord {
         let encodedReason = try task.exceptionReason.map { reason throws(RepositoryError) in
             try Self.encode(reason)
         }
+
         self.init(
             id: task.id,
             recipientName: task.recipientName,
@@ -45,6 +47,7 @@ extension DeliveryTaskRecord {
         exceptionReasonData = try task.exceptionReason.map { reason throws(RepositoryError) in
             try Self.encode(reason)
         }
+
         status = task.status
         completedAt = task.completedAt
     }

@@ -51,6 +51,7 @@ private struct HistoryRowView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Color.clear.frame(width: 16)
+
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(task.recipientName)
@@ -59,9 +60,11 @@ private struct HistoryRowView: View {
                     Spacer()
                     statusBadge
                 }
+
                 Text(subtitle)
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary)
+
                 if let completedAt = task.completedAt {
                     HStack(spacing: 4) {
                         Image(systemName: "clock")
@@ -71,6 +74,7 @@ private struct HistoryRowView: View {
                     .foregroundStyle(Palette.textSecondary)
                     .padding(.top, 6)
                 }
+
                 if task.syncState == .pending {
                     StatusBadge(
                         .historyBadgePendingSync, systemImage: "arrow.triangle.2.circlepath", tint: Palette.warning
@@ -87,12 +91,14 @@ private struct HistoryRowView: View {
                         path.move(to: CGPoint(x: 8, y: 0))
                         path.addLine(to: CGPoint(x: 8, y: 28))
                     }
+
                     if !isLast {
                         path.move(to: CGPoint(x: 8, y: 28))
                         path.addLine(to: CGPoint(x: 8, y: geometry.size.height))
                     }
                 }
                 .stroke(Palette.textSecondary.opacity(0.32), lineWidth: 2)
+
                 Circle()
                     .fill(task.status == .exception ? Palette.danger : Palette.accent)
                     .frame(width: 12, height: 12)
@@ -124,6 +130,7 @@ private struct HistoryRowView: View {
     private func historyPreview(_ tasks: [DeliveryTask]) -> some View {
         let repository = FakeTaskRepository()
         repository.completed.send(tasks)
+
         return NavigationStack {
             HistoryView(taskRepository: repository)
         }

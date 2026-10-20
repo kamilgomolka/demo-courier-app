@@ -12,6 +12,7 @@ struct SyncSchedulingTests {
         let conditions = FakeNetworkConditionsStore()
         let timeSource = ManualTimeSource()
         let latencyCalls = Mutex(0)
+
         let api = MockCourierAPI(
             conditionsStore: conditions,
             timeSource: timeSource,
@@ -22,6 +23,7 @@ struct SyncSchedulingTests {
                 }
             }
         )
+
         let syncActor = SyncActor(
             jobRepository: repository, localDataResetter: repository, api: api,
             sessionRefresher: MockSessionRefresher(conditionsStore: conditions), timeSource: timeSource

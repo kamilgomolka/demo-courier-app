@@ -39,13 +39,16 @@ struct SyncResilienceTests {
     private func withStoreURL(_ body: (URL) async throws -> Void) async throws {
         let url = makeStoreURL()
         var failure: (any Error)?
+
         do {
             try await body(url)
         } catch {
             failure = error
         }
+
         _ = await eventually { openedContainers.areAllReleased }
         removeStore(at: url)
+
         if let failure {
             throw failure
         }
@@ -63,6 +66,7 @@ struct SyncResilienceTests {
     @Test func expiredJobIsSentAfterRestart() async throws {
         try await withStoreURL { url in
             let timeSource = ManualTimeSource()
+
             do {
                 let firstRun = try openHarness(at: url, timeSource: timeSource)
                 try await firstRun.store.mergeRemoteSnapshot(sampleSnapshot())
@@ -70,6 +74,7 @@ struct SyncResilienceTests {
                 try await firstRun.store.startDelivery(id: "task-1")
                 try await firstRun.store.markDelivered(id: "task-1")
             }
+
             timeSource.advance(by: SyncPolicy.undoWindow + 1)
 
             let secondRun = try openHarness(at: url, timeSource: timeSource)

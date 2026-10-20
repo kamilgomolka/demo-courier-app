@@ -37,6 +37,7 @@ struct ShiftCardView: View {
                             .font(.system(.title2, design: .rounded, weight: .bold))
                             .foregroundStyle(cardPrimary)
                     }
+
                     Spacer()
                     Image(systemName: "location.north.line.fill")
                         .font(.title2)
@@ -44,6 +45,7 @@ struct ShiftCardView: View {
                         .frame(width: 48, height: 48)
                         .background(Palette.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
                 }
+
                 VStack(alignment: .leading, spacing: 8) {
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
@@ -61,10 +63,12 @@ struct ShiftCardView: View {
                         }
                     }
                     .frame(height: 8)
+
                     Text(.dashboardShiftCardProgress(summary.completedCount, summary.totalCount))
                         .font(Typography.caption)
                         .foregroundStyle(cardSecondary)
                 }
+
                 HStack(alignment: .firstTextBaseline) {
                     Text(.dashboardShiftCardEarnings)
                         .font(Typography.caption)
@@ -75,6 +79,7 @@ struct ShiftCardView: View {
                         .foregroundStyle(cardPrimary)
                         .contentTransition(.numericText(value: NSDecimalNumber(decimal: summary.earnings).doubleValue))
                 }
+
                 actions(for: summary)
             }
             .padding(20)
@@ -111,11 +116,13 @@ struct ShiftCardView: View {
             .accessibilityIdentifier(DashboardAccessibility.startShiftButton)
         case .active:
             let isBlocked = summary.hasTaskInTransit || model.isPerformingAction
+
             PrimaryButton(.dashboardShiftCardEndButton, systemImage: "stop.fill") {
                 isEndConfirmationPresented = true
             }
             .disabled(isBlocked)
             .accessibilityIdentifier(DashboardAccessibility.endShiftButton)
+
             if summary.hasTaskInTransit {
                 Label(.dashboardShiftCardEndBlockedMessage, systemImage: "info.circle")
                     .font(Typography.caption)

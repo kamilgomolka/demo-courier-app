@@ -28,6 +28,7 @@ final class AppEnvironment {
                 ? ProcessInfo.processInfo.environment["COURIER_UI_TEST_SESSION"].flatMap { UUID(uuidString: $0) } : nil
             let suiteName = testSessionID.map { "\(uiTestingSuiteName).\($0.uuidString)" } ?? uiTestingSuiteName
             let conditionsStore = UserDefaultsNetworkConditionsStore(suiteName: isUITesting ? suiteName : nil)
+
             if isUITesting {
                 var conditions = testSessionID == nil ? NetworkConditions() : conditionsStore.load()
                 conditions.latencyRange = 0.1...0.3
@@ -36,8 +37,10 @@ final class AppEnvironment {
         #else
             let conditionsStore = UserDefaultsNetworkConditionsStore()
         #endif
+
         do {
             let store: LocalStore
+
             #if DEBUG
                 if let testSessionID {
                     let storeURL = URL.cachesDirectory.appending(
@@ -50,6 +53,7 @@ final class AppEnvironment {
             #else
                 store = try await CourierStorage.makeStore(isStoredInMemoryOnly: false)
             #endif
+
             let api = MockCourierAPI(conditionsStore: conditionsStore)
             let syncActor = SyncActor(
                 jobRepository: store,
@@ -79,10 +83,13 @@ final class AppEnvironment {
                 return
             }
         }
+
         let application = UIApplication.shared
+
         let backgroundTaskIdentifier = application.beginBackgroundTask(withName: "outbox-drain") {
             outboxDrained.cancel()
         }
+
         Task {
             await outboxDrained.value
             application.endBackgroundTask(backgroundTaskIdentifier)

@@ -22,6 +22,7 @@ struct TaskRowView: View {
                     .foregroundStyle(Palette.textPrimary)
                     .frame(minWidth: 58, alignment: .trailing)
             }
+
             HStack(alignment: .top, spacing: 14) {
                 Image(systemName: "mappin")
                     .frame(width: 38)
@@ -30,6 +31,7 @@ struct TaskRowView: View {
             }
             .font(Typography.body)
             .foregroundStyle(Palette.textSecondary)
+
             HStack(spacing: 14) {
                 Image(systemName: "cube.box")
                     .frame(width: 38)

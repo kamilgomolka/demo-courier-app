@@ -131,6 +131,7 @@ struct SyncPipelineTests {
     @Test func failedReloadAfterResetIsReportedAndCanBeRetried() async throws {
         let harness = try await StoreBackedHarness.inMemory()
         harness.conditions.save(NetworkConditions(isOffline: true))
+
         await #expect(throws: RepositoryError.resetReloadFailed(.offline)) {
             try await harness.syncActor.resetLocalData()
         }

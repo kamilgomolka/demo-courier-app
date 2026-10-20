@@ -5,6 +5,7 @@ import os
 extension LocalStore {
     func allTasks() throws(RepositoryError) -> [DeliveryTask] {
         let pendingTaskIDs = try pendingStatusTaskIDs()
+
         return try fetch(DeliveryTaskRecord.self).map { record throws(RepositoryError) in
             try record.makeDomain(syncState: pendingTaskIDs.contains(record.id) ? .pending : .synced)
         }
@@ -17,6 +18,7 @@ extension LocalStore {
                 if (lhs.status == .inTransit) != (rhs.status == .inTransit) {
                     return lhs.status == .inTransit
                 }
+
                 return lhs.sortOrder < rhs.sortOrder
             }
     }
@@ -42,11 +44,13 @@ extension LocalStore {
 
     func pendingStatusTaskIDs() throws(RepositoryError) -> Set<TaskID> {
         var taskIDs: Set<TaskID> = []
+
         for job in try jobsSnapshot() {
             if case .updateStatus(let taskID, _, _) = job.kind {
                 taskIDs.insert(taskID)
             }
         }
+
         return taskIDs
     }
 
@@ -54,6 +58,7 @@ extension LocalStore {
         guard let record = try fetch(DeliveryTaskRecord.self).first(where: { $0.id == id }) else {
             throw .taskNotFound
         }
+
         return record
     }
 
@@ -65,6 +70,7 @@ extension LocalStore {
         guard let record = try fetch(ShiftRecord.self).first(where: { $0.status == .active }) else {
             throw .shiftNotActive
         }
+
         return record
     }
 
@@ -76,6 +82,7 @@ extension LocalStore {
 
     private func decodableJobRecords() throws(RepositoryError) -> [(record: SyncJobRecord, job: SyncJob)] {
         var decodable: [(record: SyncJobRecord, job: SyncJob)] = []
+
         for record in try fetch(SyncJobRecord.self) {
             do {
                 decodable.append((record: record, job: try record.makeDomain()))
@@ -85,6 +92,7 @@ extension LocalStore {
                 )
             }
         }
+
         return decodable.sorted { $0.job.createdAt < $1.job.createdAt }
     }
 }

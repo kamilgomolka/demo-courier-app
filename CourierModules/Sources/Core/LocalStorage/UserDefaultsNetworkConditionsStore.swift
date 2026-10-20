@@ -15,6 +15,7 @@ public struct UserDefaultsNetworkConditionsStore: NetworkConditionsStore {
         guard let data = userDefaults.data(forKey: key) else {
             return NetworkConditions()
         }
+
         do {
             return try JSONDecoder().decode(NetworkConditions.self, from: data)
         } catch {

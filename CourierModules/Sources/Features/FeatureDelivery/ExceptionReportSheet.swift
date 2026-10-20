@@ -17,12 +17,14 @@ struct ExceptionReportSheet: View {
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal)
+
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 12)], spacing: 12) {
                         ForEach(ExceptionDraft.Choice.allCases, id: \.self) { choice in
                             choiceCard(choice)
                         }
                     }
                     .padding(.horizontal)
+
                     if draft.choice == .other {
                         TextField(text: $draft.details, axis: .vertical) {
                             Text(.deliveryExceptionDetailsPlaceholder)
@@ -43,6 +45,7 @@ struct ExceptionReportSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: .deliveryExceptionCancelButton), action: onCancel)
                 }
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         guard let reason = draft.reason else { return }
@@ -67,6 +70,7 @@ struct ExceptionReportSheet: View {
 
     private func choiceCard(_ choice: ExceptionDraft.Choice) -> some View {
         let isSelected = draft.choice == choice
+
         return Button {
             draft.choice = choice
         } label: {

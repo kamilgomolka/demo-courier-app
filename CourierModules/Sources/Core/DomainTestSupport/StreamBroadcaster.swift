@@ -31,6 +31,7 @@
                 transform(&state.current)
                 return (state.current, Array(state.continuations.values))
             }
+
             for continuation in continuations {
                 continuation.yield(value)
             }
@@ -39,14 +40,18 @@
         public func stream() -> AsyncStream<Value> {
             let (stream, continuation) = AsyncStream.makeStream(of: Value.self, bufferingPolicy: .bufferingNewest(1))
             let observerID = UUID()
+
             let initial = state.withLock { state -> Value in
                 state.continuations[observerID] = continuation
                 return state.current
             }
+
             continuation.yield(initial)
+
             continuation.onTermination = { [weak self] _ in
                 self?.state.withLock { _ = $0.continuations.removeValue(forKey: observerID) }
             }
+
             return stream
         }
     }

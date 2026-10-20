@@ -7,6 +7,7 @@ extension LocalStore {
             guard let shift = try fetch(ShiftRecord.self).first, shift.status == .scheduled else {
                 throw .invalidShiftTransition
             }
+
             shift.status = .active
             shift.startDate = timeSource.now()
         }
@@ -17,9 +18,11 @@ extension LocalStore {
             guard let shift = try fetch(ShiftRecord.self).first, shift.status == .active else {
                 throw .invalidShiftTransition
             }
+
             let hasTaskInTransit = try fetch(DeliveryTaskRecord.self).contains {
                 $0.shiftID == shift.id && $0.status == .inTransit
             }
+
             guard !hasTaskInTransit else { throw .shiftHasTaskInTransit }
             shift.status = .finished
             shift.endDate = timeSource.now()
@@ -31,6 +34,7 @@ extension LocalStore {
             guard let shift = try fetch(ShiftRecord.self).first, shift.status == .finished else {
                 throw .invalidShiftTransition
             }
+
             shift.status = .active
             shift.endDate = nil
         }

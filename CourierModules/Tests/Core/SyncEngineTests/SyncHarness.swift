@@ -18,6 +18,7 @@ struct FakeSyncHarness {
             latency: { _ in
                 latency
             })
+
         syncActor = SyncActor(
             jobRepository: repository,
             localDataResetter: repository,
@@ -57,11 +58,13 @@ struct StoreBackedHarness {
     init(store: LocalStore, timeSource: ManualTimeSource, latency: TimeInterval = 0) {
         self.store = store
         self.timeSource = timeSource
+
         api = MockCourierAPI(
             conditionsStore: conditions, timeSource: timeSource,
             latency: { _ in
                 latency
             })
+
         syncActor = SyncActor(
             jobRepository: store, localDataResetter: store,
             api: api,
@@ -79,9 +82,11 @@ struct StoreBackedHarness {
             latency: latency
         )
         try await harness.store.mergeRemoteSnapshot(sampleSnapshot())
+
         if shiftStarted {
             try await harness.store.startShift()
         }
+
         return harness
     }
 

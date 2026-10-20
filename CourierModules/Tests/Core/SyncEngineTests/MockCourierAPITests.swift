@@ -49,6 +49,7 @@ struct MockCourierAPITests {
         await #expect(throws: expected) {
             try await api.send(makeJob())
         }
+
         #expect(api.requests.count == 1)
     }
 
@@ -58,6 +59,7 @@ struct MockCourierAPITests {
         await #expect(throws: SyncError.offline) {
             try await api.send(makeJob())
         }
+
         #expect(api.requests.isEmpty)
     }
 
@@ -96,6 +98,7 @@ struct MockCourierAPITests {
 
     @Test func cancelledRequestStopsDuringLatencyWithoutReachingTheServer() async throws {
         let timeSource = ManualTimeSource()
+
         let api = MockCourierAPI(
             conditionsStore: FakeNetworkConditionsStore(),
             timeSource: timeSource,
@@ -103,6 +106,7 @@ struct MockCourierAPITests {
                 2
             }
         )
+
         let job = makeJob()
         let task = Task { await Self.failure(of: job, sentTo: api) }
         #expect(await eventually { timeSource.pendingSleeperCount == 1 })

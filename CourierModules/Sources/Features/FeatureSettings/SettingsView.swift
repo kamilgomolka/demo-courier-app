@@ -76,6 +76,7 @@ public struct SettingsView: View {
             ) {
                 Text(.settingsFailureNone).tag(SimulationChoice.failure(.none))
                 Text(.settingsSimulationOffline).tag(SimulationChoice.offline)
+
                 ForEach(SimulatedFailure.allCases.filter { $0 != .none }, id: \.self) { failure in
                     Text(title(for: failure)).tag(SimulationChoice.failure(failure))
                 }
@@ -83,6 +84,7 @@ public struct SettingsView: View {
                 Label(.settingsSimulationFailure, systemImage: "wifi.exclamationmark")
             }
             .accessibilityIdentifier(SettingsAccessibility.simulatedFailurePicker)
+
             VStack(alignment: .leading, spacing: 18) {
                 Label(.settingsSimulationLatency, systemImage: "timer")
                 latencyStepper(
@@ -142,10 +144,12 @@ public struct SettingsView: View {
             }
             .disabled(model.jobs.isEmpty)
             .accessibilityIdentifier(SettingsAccessibility.syncNowButton)
+
             if model.jobs.isEmpty {
                 Label(.settingsJobsEmpty, systemImage: "checkmark.circle")
                     .foregroundStyle(Palette.textSecondary)
             }
+
             ForEach(model.jobs) { job in
                 SyncJobRowView(job: job)
                     .accessibilityIdentifier(SettingsAccessibility.job(id: job.id.uuidString))
@@ -160,6 +164,7 @@ public struct SettingsView: View {
             HStack {
                 Text(title)
                 Spacer()
+
                 HStack(spacing: 0) {
                     Text(value.wrappedValue, format: .number.precision(.fractionLength(1)))
                     Text(.settingsSimulationSecondsSuffix)
@@ -196,6 +201,7 @@ private struct SyncJobRowView: View {
             Text(kindTitle)
                 .font(Typography.headline)
                 .foregroundStyle(Palette.textPrimary)
+
             HStack {
                 Text(.settingsJobsAttempts(job.attemptCount))
                 Spacer()
@@ -203,6 +209,7 @@ private struct SyncJobRowView: View {
             }
             .font(Typography.caption)
             .foregroundStyle(Palette.textSecondary)
+
             if let lastFailure = job.lastFailure {
                 Text(verbatim: lastFailure)
                     .font(Typography.caption)
@@ -231,6 +238,7 @@ private struct SyncJobRowView: View {
         let conditionsStore = FakeNetworkConditionsStore(conditions)
         let jobRepository = FakeSyncJobRepository()
         jobRepository.jobs.send(jobs)
+
         return NavigationStack {
             SettingsView(
                 conditionsStore: conditionsStore,

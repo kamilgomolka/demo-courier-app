@@ -10,6 +10,7 @@ public enum TaskEvent: Sendable {
 public enum TaskStateMachine {
     public static func apply(_ event: TaskEvent, to task: DeliveryTask) throws(RepositoryError) -> DeliveryTask {
         var updated = task
+
         switch (event, task.status) {
         case (.startDelivery, .new):
             updated.status = .inTransit
@@ -25,12 +26,14 @@ public enum TaskStateMachine {
             {
                 throw .exceptionDetailsRequired
             }
+
             updated.status = .exception
             updated.exceptionReason = reason
             updated.completedAt = date
         default:
             throw .invalidTransition
         }
+
         return updated
     }
 }

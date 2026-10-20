@@ -23,11 +23,13 @@ struct MainTabView: View {
                     )
                 }
             }
+
             Tab(.navigationTabHistory, systemImage: "clock", value: AppTab.history) {
                 NavigationStack {
                     HistoryView(taskRepository: environment.store)
                 }
             }
+
             Tab(.navigationTabSettings, systemImage: "gearshape", value: AppTab.settings) {
                 NavigationStack {
                     SettingsView(
@@ -63,6 +65,7 @@ struct MainTabView: View {
         .animation(.snappy, value: router.pendingDeliveryUndo?.id)
         .task(id: router.pendingDeliveryUndo?.id) {
             guard let pendingUndo = router.pendingDeliveryUndo else { return }
+
             do {
                 try await SystemTimeSource().sleep(until: pendingUndo.deadline)
                 await finishDelivery(id: pendingUndo.task.id)
@@ -84,6 +87,7 @@ struct MainTabView: View {
                 router.dismissUndoFailure()
                 Task { await finishDelivery(id: pendingUndo.task.id) }
             }
+
             Button(String(localized: .navigationDismiss), role: .cancel) { router.dismissUndoFailure() }
         }
     }

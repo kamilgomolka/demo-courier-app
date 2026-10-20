@@ -46,6 +46,7 @@
                 state.loadCallCount += 1
                 return state.loadFailure
             }
+
             if let failure {
                 throw failure
             }
@@ -56,6 +57,7 @@
                 state.resetCallCount += 1
                 return state.resetFailure
             }
+
             if let failure {
                 throw failure
             }

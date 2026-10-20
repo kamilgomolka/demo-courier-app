@@ -85,6 +85,7 @@
                 if let existing = state.taskBroadcasters[id] {
                     return existing
                 }
+
                 let created = StreamBroadcaster<DeliveryTask?>(nil)
                 state.taskBroadcasters[id] = created
                 return created
@@ -93,6 +94,7 @@
 
         public func holdCalls() {
             let (stream, continuation) = AsyncStream.makeStream(of: Void.self)
+
             state.withLock {
                 $0.heldCalls = stream
                 $0.heldCallsContinuation = continuation
@@ -105,8 +107,10 @@
                     state.heldCalls = nil
                     state.heldCallsContinuation = nil
                 }
+
                 return state.heldCallsContinuation
             }
+
             continuation?.finish()
         }
 
@@ -115,9 +119,11 @@
                 state.calls.append(call)
                 return (state.failure, state.heldCalls)
             }
+
             if let heldCalls {
                 for await _ in heldCalls {}
             }
+
             if let failure {
                 throw failure
             }

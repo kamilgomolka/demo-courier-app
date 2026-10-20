@@ -30,6 +30,7 @@ final class SettingsViewModel {
             if jobs != updatedJobs {
                 jobs = updatedJobs
             }
+
             reloadConditions()
         }
     }
@@ -37,6 +38,7 @@ final class SettingsViewModel {
     func setOffline(_ isOffline: Bool) async {
         let wasOffline = conditionsStore.load().isOffline
         update { $0.isOffline = isOffline }
+
         if wasOffline && !isOffline {
             await syncController.requestSync(.connectivityRestored)
         }
@@ -63,10 +65,12 @@ final class SettingsViewModel {
 
     func resetLocalData() async {
         isResetting = true
+
         defer {
             isResetting = false
             reloadConditions()
         }
+
         do {
             try await syncController.resetLocalData()
         } catch {
@@ -82,9 +86,11 @@ final class SettingsViewModel {
         let persistedConditions = conditionsStore.load()
         var updatedConditions = persistedConditions
         change(&updatedConditions)
+
         if updatedConditions != persistedConditions {
             conditionsStore.save(updatedConditions)
         }
+
         if conditions != updatedConditions {
             conditions = updatedConditions
         }
@@ -92,6 +98,7 @@ final class SettingsViewModel {
 
     private func reloadConditions() {
         let persistedConditions = conditionsStore.load()
+
         if conditions != persistedConditions {
             conditions = persistedConditions
         }

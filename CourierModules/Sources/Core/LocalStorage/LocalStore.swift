@@ -26,6 +26,7 @@ public actor LocalStore {
             modelContext.rollback()
             throw error
         }
+
         try saveAndPublish()
     }
 
@@ -39,6 +40,7 @@ public actor LocalStore {
                 throw .storageFailure(String(describing: error))
             }
         }
+
         for (observerID, refresh) in observers where !refresh(self) {
             observers.removeValue(forKey: observerID)
         }
@@ -59,9 +61,11 @@ extension LocalStore {
     ) -> AsyncStream<Value> {
         let (stream, continuation) = AsyncStream.makeStream(of: Value.self, bufferingPolicy: .bufferingNewest(1))
         let observerID = UUID()
+
         continuation.onTermination = { [weak self] _ in
             Task { await self?.removeObserver(observerID) }
         }
+
         Task { await self.addObserver(observerID, continuation: continuation, query: query) }
         return stream
     }
@@ -72,19 +76,23 @@ extension LocalStore {
         query: @escaping @Sendable (isolated LocalStore) throws(RepositoryError) -> Value
     ) {
         var lastEmitted: Value?
+
         let refresh: (isolated LocalStore) -> Bool = { store in
             do {
                 let value = try query(store)
                 guard value != lastEmitted else { return true }
                 lastEmitted = value
+
                 if case .terminated = continuation.yield(value) {
                     return false
                 }
             } catch {
                 Log.storage.error("Observation query failed: \(String(describing: error), privacy: .public)")
             }
+
             return true
         }
+
         guard refresh(self) else { return }
         observers[observerID] = refresh
     }

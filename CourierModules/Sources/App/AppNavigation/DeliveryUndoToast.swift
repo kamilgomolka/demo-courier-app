@@ -10,6 +10,7 @@ struct DeliveryUndoToast: View {
         HStack(spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(Palette.accent)
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(.navigationUndoToastDelivered(pendingUndo.task.recipientName))
                     .font(Typography.headline)
@@ -19,7 +20,9 @@ struct DeliveryUndoToast: View {
                     .foregroundStyle(Palette.textSecondary)
                     .contentTransition(.numericText(countsDown: true))
             }
+
             Spacer(minLength: 4)
+
             Button(action: undo) {
                 Text(.navigationUndoToastUndo)
                     .font(Typography.headline)

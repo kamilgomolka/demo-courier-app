@@ -24,6 +24,7 @@ final class HistoryViewModel {
     func run() async {
         for await completedTasks in taskRepository.observeCompleted() {
             let updatedSections = groupedByDay(completedTasks)
+
             if sections != updatedSections {
                 sections = updatedSections
             }
@@ -34,7 +35,9 @@ final class HistoryViewModel {
         let completedTasks = tasks.compactMap { task in
             task.completedAt.map { (task: task, completedAt: $0) }
         }
+
         let tasksByDay = Dictionary(grouping: completedTasks) { calendar.startOfDay(for: $0.completedAt) }
+
         return
             tasksByDay
             .map { day, entries in

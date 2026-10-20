@@ -29,6 +29,7 @@ struct DiskPersistenceTests {
     @Test func jobSurvivesStoreRecreation() async throws {
         try await withStoreURL { url in
             let timeSource = ManualTimeSource()
+
             do {
                 let store = try openStore(at: url, timeSource: timeSource)
                 try await store.mergeRemoteSnapshot(StoreFixture.snapshot())
@@ -49,6 +50,7 @@ struct DiskPersistenceTests {
     @Test func restartInsideUndoWindowKeepsJobHeldAndUndoWorks() async throws {
         try await withStoreURL { url in
             let timeSource = ManualTimeSource()
+
             do {
                 let store = try openStore(at: url, timeSource: timeSource)
                 try await store.mergeRemoteSnapshot(StoreFixture.snapshot())
@@ -56,6 +58,7 @@ struct DiskPersistenceTests {
                 try await store.startDelivery(id: "task-1")
                 try await store.markDelivered(id: "task-1")
             }
+
             timeSource.advance(by: 2)
 
             let reopened = try openStore(at: url, timeSource: timeSource)
@@ -76,6 +79,7 @@ struct DiskPersistenceTests {
     @Test func restartAfterWindowExpiryMakesJobEligible() async throws {
         try await withStoreURL { url in
             let timeSource = ManualTimeSource()
+
             do {
                 let store = try openStore(at: url, timeSource: timeSource)
                 try await store.mergeRemoteSnapshot(StoreFixture.snapshot())
@@ -83,12 +87,14 @@ struct DiskPersistenceTests {
                 try await store.startDelivery(id: "task-1")
                 try await store.markDelivered(id: "task-1")
             }
+
             timeSource.advance(by: SyncPolicy.undoWindow + 1)
 
             let reopened = try openStore(at: url, timeSource: timeSource)
 
             let eligible = try await reopened.eligibleJobs(at: timeSource.now())
             #expect(eligible.count == 2)
+
             await #expect(throws: RepositoryError.undoWindowClosed) {
                 try await reopened.undoDelivery(id: "task-1")
             }

@@ -14,9 +14,11 @@ struct TaskQueueViewModelTests {
 
     private func sendQueue(inTransit: Bool = false) {
         var queue: [DeliveryTask] = []
+
         if inTransit {
             queue.append(.fixture(id: "active", status: .inTransit, sortOrder: 0))
         }
+
         queue += [
             .fixture(id: "a", sortOrder: 1),
             .fixture(id: "b", sortOrder: 2),

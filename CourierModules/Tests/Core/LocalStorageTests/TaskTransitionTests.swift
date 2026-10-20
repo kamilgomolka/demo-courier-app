@@ -60,6 +60,7 @@ struct TaskTransitionTests {
         await #expect(throws: RepositoryError.shiftNotActive) {
             try await fixture.store.startDelivery(id: "task-1")
         }
+
         #expect(try await fixture.jobs().isEmpty)
     }
 
@@ -127,6 +128,7 @@ struct TaskTransitionTests {
         await #expect(throws: RepositoryError.undoWindowClosed) {
             try await fixture.store.undoDelivery(id: "task-1")
         }
+
         #expect(try await fixture.task("task-1").status == .delivered)
     }
 
@@ -150,6 +152,7 @@ struct TaskTransitionTests {
         await #expect(throws: RepositoryError.anotherTaskInTransit) {
             try await fixture.store.undoDelivery(id: "task-1")
         }
+
         #expect(try await fixture.task("task-1").status == .delivered)
     }
 
@@ -162,6 +165,7 @@ struct TaskTransitionTests {
         await #expect(throws: RepositoryError.shiftNotActive) {
             try await fixture.store.undoDelivery(id: "task-1")
         }
+
         #expect(try await fixture.task("task-1").status == .delivered)
     }
 

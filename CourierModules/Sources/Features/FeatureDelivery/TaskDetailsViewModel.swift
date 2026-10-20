@@ -29,13 +29,16 @@ final class TaskDetailsViewModel {
     func run() async {
         for await updatedTask in taskRepository.observeTask(id: taskID) {
             let previousStatus = task?.status
+
             if task != updatedTask {
                 task = updatedTask
             }
+
             if previousStatus == .inTransit, let updatedTask, updatedTask.status == .delivered {
                 onDeliveryMarked(updatedTask)
                 finish()
             }
+
             if updatedTask != nil {
                 hasLoadedTask = true
             } else if hasLoadedTask {
@@ -60,6 +63,7 @@ final class TaskDetailsViewModel {
         let isReported = await perform { () async throws(RepositoryError) in
             try await self.taskRepository.reportException(id: self.taskID, reason: reason)
         }
+
         if isReported {
             finish()
         }
@@ -69,6 +73,7 @@ final class TaskDetailsViewModel {
         let isCommitted = await perform { () async throws(RepositoryError) in
             try await self.taskRepository.commitDelivery(id: self.taskID)
         }
+
         if isCommitted {
             finish()
         }
@@ -87,6 +92,7 @@ final class TaskDetailsViewModel {
         guard !isPerformingAction else { return false }
         isPerformingAction = true
         defer { isPerformingAction = false }
+
         do {
             try await action()
             return true

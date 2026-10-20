@@ -36,10 +36,12 @@ extension LocalStore {
             let updated = try TaskStateMachine.apply(.undoDelivery, to: try domainTask(record))
             let shift = try activeShiftRecord()
             guard record.shiftID == shift.id else { throw .taskNotInActiveShift }
+
             guard let holdingJob = try pendingDeliveryJob(taskID: id), holdingJob.job.notBefore > timeSource.now()
             else {
                 throw .undoWindowClosed
             }
+
             try requireNoOtherTaskInTransit(besides: id)
             try record.apply(updated)
             modelContext.delete(holdingJob.record)
@@ -48,6 +50,7 @@ extension LocalStore {
 
     public func commitDelivery(id: TaskID) async throws(RepositoryError) {
         let now = timeSource.now()
+
         guard
             let record = try fetch(DeliveryTaskRecord.self).first(where: { $0.id == id }),
             record.status == .delivered,
@@ -56,6 +59,7 @@ extension LocalStore {
         else {
             return
         }
+
         try transact { holdingJob.record.notBefore = now }
     }
 
@@ -78,27 +82,34 @@ extension LocalStore {
         try transact { () throws(RepositoryError) in
             let shift = try activeShiftRecord()
             guard Set(orderedTaskIDs).count == orderedTaskIDs.count else { throw .invalidTransition }
+
             let records = try orderedTaskIDs.map { id throws(RepositoryError) in
                 try taskRecord(id: id)
             }
+
             for record in records {
                 guard record.shiftID == shift.id else { throw .taskNotInActiveShift }
                 guard record.status == .new else { throw .invalidTransition }
             }
+
             let existingReorderJobs = try jobRecords { job in
                 if case .reorder = job.kind { return true }
                 return false
             }
+
             let currentOrder = records.sorted { $0.sortOrder < $1.sortOrder }.map(\.id)
             guard currentOrder != orderedTaskIDs || !existingReorderJobs.isEmpty else { return }
 
             let availablePositions = records.map(\.sortOrder).sorted()
+
             for (record, position) in zip(records, availablePositions) {
                 record.sortOrder = position
             }
+
             for existing in existingReorderJobs {
                 modelContext.delete(existing.record)
             }
+
             try enqueue(
                 .reorder(orderedTaskIDs: orderedTaskIDs),
                 notBefore: timeSource.now().addingTimeInterval(SyncPolicy.reorderDebounce)
@@ -115,6 +126,7 @@ extension LocalStore {
 
     func requireNoOtherTaskInTransit(besides id: TaskID) throws(RepositoryError) {
         let otherInTransit = try fetch(DeliveryTaskRecord.self).contains { $0.status == .inTransit && $0.id != id }
+
         if otherInTransit {
             throw .anotherTaskInTransit
         }
@@ -137,6 +149,7 @@ extension LocalStore {
             if case .reorder(let orderedTaskIDs) = job.kind { return orderedTaskIDs.contains(taskID) }
             return false
         }
+
         for existing in reorderJobs {
             guard case .reorder(let orderedTaskIDs) = existing.job.kind else { continue }
             modelContext.delete(existing.record)
