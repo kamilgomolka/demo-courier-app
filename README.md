@@ -44,7 +44,7 @@ Arrows in the diagram represent compile-time dependencies. The package manifest 
 ```mermaid
 graph TD
     Host[CourierApp Host] --> AppNavigation
-    AppNavigation --> [FeatureDashboard ·<br/>FeatureDelivery ·<br/>FeatureHistory ·<br/>FeatureSettings]
+    AppNavigation --> Features[FeatureDashboard · FeatureDelivery · FeatureHistory · FeatureSettings]
     AppNavigation --> LocalStorage
     AppNavigation --> SyncEngine
     AppNavigation --> DesignSystem
