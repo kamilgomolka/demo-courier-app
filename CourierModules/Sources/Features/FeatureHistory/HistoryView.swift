@@ -18,28 +18,32 @@ public struct HistoryView: View {
                     message: .historyEmptyMessage
                 )
             } else {
-                List(model.sections) { section in
-                    Section {
-                        ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
-                            HistoryRowView(
-                                task: task,
-                                isFirst: index == 0,
-                                isLast: index == section.tasks.count - 1
-                            )
-                            .accessibilityIdentifier(HistoryAccessibility.row(id: task.id))
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                        }
-                    } header: {
-                        Text(section.day, format: .dateTime.day().month().year())
-                    }
-                }
+                historyList
             }
         }
         .navigationTitle(Text(.historyNavigationTitle))
         .task { await model.run() }
         .scrollContentBackground(.hidden)
         .background(Palette.backgroundPrimary)
+    }
+
+    private var historyList: some View {
+        List(model.sections) { section in
+            Section {
+                ForEach(Array(section.tasks.enumerated()), id: \.element.id) { index, task in
+                    HistoryRowView(
+                        task: task,
+                        isFirst: index == 0,
+                        isLast: index == section.tasks.count - 1
+                    )
+                    .accessibilityIdentifier(HistoryAccessibility.row(id: task.id))
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                }
+            } header: {
+                Text(section.day, format: .dateTime.day().month().year())
+            }
+        }
     }
 }
 
@@ -53,26 +57,14 @@ private struct HistoryRowView: View {
             Color.clear.frame(width: 16)
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(task.recipientName)
-                        .font(Typography.headline)
-                        .foregroundStyle(Palette.textPrimary)
-                    Spacer()
-                    statusBadge
-                }
+                header
 
                 Text(subtitle)
                     .font(Typography.body)
                     .foregroundStyle(Palette.textSecondary)
 
                 if let completedAt = task.completedAt {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                        Text(completedAt, format: .dateTime.hour().minute())
-                    }
-                    .font(Typography.caption)
-                    .foregroundStyle(Palette.textSecondary)
-                    .padding(.top, 6)
+                    completionTime(completedAt)
                 }
 
                 if task.syncState == .pending {
@@ -85,25 +77,7 @@ private struct HistoryRowView: View {
         }
         .padding(.vertical, 16)
         .background(alignment: .leading) {
-            GeometryReader { geometry in
-                Path { path in
-                    if !isFirst {
-                        path.move(to: CGPoint(x: 8, y: 0))
-                        path.addLine(to: CGPoint(x: 8, y: 28))
-                    }
-
-                    if !isLast {
-                        path.move(to: CGPoint(x: 8, y: 28))
-                        path.addLine(to: CGPoint(x: 8, y: geometry.size.height))
-                    }
-                }
-                .stroke(Palette.textSecondary.opacity(0.32), lineWidth: 2)
-
-                Circle()
-                    .fill(task.status == .exception ? Palette.danger : Palette.accent)
-                    .frame(width: 12, height: 12)
-                    .position(x: 8, y: 28)
-            }
+            timeline
         }
     }
 
@@ -121,6 +95,48 @@ private struct HistoryRowView: View {
 
     private var subtitle: String {
         task.exceptionReason?.displayText ?? task.deliveryAddress
+    }
+
+    private var header: some View {
+        HStack {
+            Text(task.recipientName)
+                .font(Typography.headline)
+                .foregroundStyle(Palette.textPrimary)
+            Spacer()
+            statusBadge
+        }
+    }
+
+    private func completionTime(_ completedAt: Date) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "clock")
+            Text(completedAt, format: .dateTime.hour().minute())
+        }
+        .font(Typography.caption)
+        .foregroundStyle(Palette.textSecondary)
+        .padding(.top, 6)
+    }
+
+    private var timeline: some View {
+        GeometryReader { geometry in
+            Path { path in
+                if !isFirst {
+                    path.move(to: CGPoint(x: 8, y: 0))
+                    path.addLine(to: CGPoint(x: 8, y: 28))
+                }
+
+                if !isLast {
+                    path.move(to: CGPoint(x: 8, y: 28))
+                    path.addLine(to: CGPoint(x: 8, y: geometry.size.height))
+                }
+            }
+            .stroke(Palette.textSecondary.opacity(0.32), lineWidth: 2)
+
+            Circle()
+                .fill(task.status == .exception ? Palette.danger : Palette.accent)
+                .frame(width: 12, height: 12)
+                .position(x: 8, y: 28)
+        }
     }
 }
 

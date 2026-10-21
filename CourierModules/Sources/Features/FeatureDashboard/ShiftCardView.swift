@@ -27,58 +27,11 @@ struct ShiftCardView: View {
     var body: some View {
         if let summary = model.summary {
             VStack(alignment: .leading, spacing: 20) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Label(.dashboardShiftCardLabel, systemImage: "bicycle")
-                            .font(.caption.weight(.bold))
-                            .textCase(.uppercase)
-                            .foregroundStyle(cardSecondary)
-                        Text(statusTitle(for: summary.status))
-                            .font(.system(.title2, design: .rounded, weight: .bold))
-                            .foregroundStyle(cardPrimary)
-                    }
+                header(for: summary)
 
-                    Spacer()
-                    Image(systemName: "location.north.line.fill")
-                        .font(.title2)
-                        .foregroundStyle(cardAccent)
-                        .frame(width: 48, height: 48)
-                        .background(Palette.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
-                }
+                progressSection(for: summary)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(Palette.mint.opacity(0.12))
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Palette.mint, Palette.mintHighlight],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .shadow(color: Palette.mintHighlight.opacity(0.35), radius: 3)
-                                .frame(width: geometry.size.width * min(max(summary.progress, 0), 1))
-                        }
-                    }
-                    .frame(height: 8)
-
-                    Text(.dashboardShiftCardProgress(summary.completedCount, summary.totalCount))
-                        .font(Typography.caption)
-                        .foregroundStyle(cardSecondary)
-                }
-
-                HStack(alignment: .firstTextBaseline) {
-                    Text(.dashboardShiftCardEarnings)
-                        .font(Typography.caption)
-                        .foregroundStyle(cardSecondary)
-                    Spacer()
-                    Text(summary.earnings, format: .currency(code: "GBP"))
-                        .font(.system(.title, design: .rounded, weight: .bold).monospacedDigit())
-                        .foregroundStyle(cardPrimary)
-                        .contentTransition(.numericText(value: NSDecimalNumber(decimal: summary.earnings).doubleValue))
-                }
+                earningsSection(for: summary)
 
                 actions(for: summary)
             }
@@ -109,31 +62,11 @@ struct ShiftCardView: View {
     private func actions(for summary: ShiftSummary) -> some View {
         switch summary.status {
         case .scheduled:
-            PrimaryButton(.dashboardShiftCardStartButton, systemImage: "play.fill") {
-                Task { await model.startShift() }
-            }
-            .disabled(model.isPerformingAction)
-            .accessibilityIdentifier(DashboardAccessibility.startShiftButton)
+            startShiftButton
         case .active:
-            let isBlocked = summary.hasTaskInTransit || model.isPerformingAction
-
-            PrimaryButton(.dashboardShiftCardEndButton, systemImage: "stop.fill") {
-                isEndConfirmationPresented = true
-            }
-            .disabled(isBlocked)
-            .accessibilityIdentifier(DashboardAccessibility.endShiftButton)
-
-            if summary.hasTaskInTransit {
-                Label(.dashboardShiftCardEndBlockedMessage, systemImage: "info.circle")
-                    .font(Typography.caption)
-                    .foregroundStyle(Palette.warning)
-            }
+            activeShiftActions(for: summary)
         case .finished:
-            PrimaryButton(.dashboardShiftCardReopenButton, systemImage: "arrow.counterclockwise") {
-                Task { await model.reopenShift() }
-            }
-            .disabled(model.isPerformingAction)
-            .accessibilityIdentifier(DashboardAccessibility.reopenShiftButton)
+            reopenShiftButton
         }
     }
 
@@ -143,6 +76,98 @@ struct ShiftCardView: View {
         case .active: .dashboardShiftCardStatusActive
         case .finished: .dashboardShiftCardStatusFinished
         }
+    }
+
+    private func header(for summary: ShiftSummary) -> some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label(.dashboardShiftCardLabel, systemImage: "bicycle")
+                    .font(.caption.weight(.bold))
+                    .textCase(.uppercase)
+                    .foregroundStyle(cardSecondary)
+                Text(statusTitle(for: summary.status))
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .foregroundStyle(cardPrimary)
+            }
+
+            Spacer()
+            Image(systemName: "location.north.line.fill")
+                .font(.title2)
+                .foregroundStyle(cardAccent)
+                .frame(width: 48, height: 48)
+                .background(Palette.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    private func progressSection(for summary: ShiftSummary) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Palette.mint.opacity(0.12))
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [Palette.mint, Palette.mintHighlight],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .shadow(color: Palette.mintHighlight.opacity(0.35), radius: 3)
+                        .frame(width: geometry.size.width * min(max(summary.progress, 0), 1))
+                }
+            }
+            .frame(height: 8)
+
+            Text(.dashboardShiftCardProgress(summary.completedCount, summary.totalCount))
+                .font(Typography.caption)
+                .foregroundStyle(cardSecondary)
+        }
+    }
+
+    private func earningsSection(for summary: ShiftSummary) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(.dashboardShiftCardEarnings)
+                .font(Typography.caption)
+                .foregroundStyle(cardSecondary)
+            Spacer()
+            Text(summary.earnings, format: .currency(code: "GBP"))
+                .font(.system(.title, design: .rounded, weight: .bold).monospacedDigit())
+                .foregroundStyle(cardPrimary)
+                .contentTransition(.numericText(value: NSDecimalNumber(decimal: summary.earnings).doubleValue))
+        }
+    }
+
+    private var startShiftButton: some View {
+        PrimaryButton(.dashboardShiftCardStartButton, systemImage: "play.fill") {
+            Task { await model.startShift() }
+        }
+        .disabled(model.isPerformingAction)
+        .accessibilityIdentifier(DashboardAccessibility.startShiftButton)
+    }
+
+    @ViewBuilder
+    private func activeShiftActions(for summary: ShiftSummary) -> some View {
+        let isBlocked = summary.hasTaskInTransit || model.isPerformingAction
+
+        PrimaryButton(.dashboardShiftCardEndButton, systemImage: "stop.fill") {
+            isEndConfirmationPresented = true
+        }
+        .disabled(isBlocked)
+        .accessibilityIdentifier(DashboardAccessibility.endShiftButton)
+
+        if summary.hasTaskInTransit {
+            Label(.dashboardShiftCardEndBlockedMessage, systemImage: "info.circle")
+                .font(Typography.caption)
+                .foregroundStyle(Palette.warning)
+        }
+    }
+
+    private var reopenShiftButton: some View {
+        PrimaryButton(.dashboardShiftCardReopenButton, systemImage: "arrow.counterclockwise") {
+            Task { await model.reopenShift() }
+        }
+        .disabled(model.isPerformingAction)
+        .accessibilityIdentifier(DashboardAccessibility.reopenShiftButton)
     }
 }
 

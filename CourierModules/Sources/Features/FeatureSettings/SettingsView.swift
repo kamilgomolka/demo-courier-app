@@ -54,56 +54,9 @@ public struct SettingsView: View {
 
     private var simulationSection: some View {
         Section {
-            Picker(
-                selection: Binding(
-                    get: {
-                        model.conditions.isOffline
-                            ? SimulationChoice.offline : .failure(model.conditions.simulatedFailure)
-                    },
-                    set: { choice in
-                        Task {
-                            switch choice {
-                            case .offline:
-                                model.setSimulatedFailure(.none)
-                                await model.setOffline(true)
-                            case .failure(let failure):
-                                model.setSimulatedFailure(failure)
-                                await model.setOffline(false)
-                            }
-                        }
-                    }
-                )
-            ) {
-                Text(.settingsFailureNone).tag(SimulationChoice.failure(.none))
-                Text(.settingsSimulationOffline).tag(SimulationChoice.offline)
+            simulationPicker
 
-                ForEach(SimulatedFailure.allCases.filter { $0 != .none }, id: \.self) { failure in
-                    Text(title(for: failure)).tag(SimulationChoice.failure(failure))
-                }
-            } label: {
-                Label(.settingsSimulationFailure, systemImage: "wifi.exclamationmark")
-            }
-            .accessibilityIdentifier(SettingsAccessibility.simulatedFailurePicker)
-
-            VStack(alignment: .leading, spacing: 18) {
-                Label(.settingsSimulationLatency, systemImage: "timer")
-                latencyStepper(
-                    title: .settingsSimulationLatencyFrom,
-                    value: Binding(
-                        get: { model.conditions.latencyRange.lowerBound },
-                        set: { model.setLatencyLowerBound($0) }
-                    )
-                )
-                .padding(.leading, 32)
-                latencyStepper(
-                    title: .settingsSimulationLatencyTo,
-                    value: Binding(
-                        get: { model.conditions.latencyRange.upperBound },
-                        set: { model.setLatencyUpperBound($0) }
-                    )
-                )
-                .padding(.leading, 32)
-            }
+            latencyControls
         } header: {
             Text(.settingsSimulationHeader)
         }
@@ -136,14 +89,7 @@ public struct SettingsView: View {
 
     private var jobsSection: some View {
         Section {
-            Button {
-                Task { await model.syncNow() }
-            } label: {
-                Label(.settingsSyncNowButton, systemImage: "arrow.triangle.2.circlepath")
-                    .foregroundStyle(model.jobs.isEmpty ? Palette.textSecondary : Palette.accent)
-            }
-            .disabled(model.jobs.isEmpty)
-            .accessibilityIdentifier(SettingsAccessibility.syncNowButton)
+            syncNowButton
 
             if model.jobs.isEmpty {
                 Label(.settingsJobsEmpty, systemImage: "checkmark.circle")
@@ -185,6 +131,72 @@ public struct SettingsView: View {
         case .unauthorized: .settingsFailureUnauthorized
         case .conflict: .settingsFailureConflict
         }
+    }
+
+    private var simulationPicker: some View {
+        Picker(
+            selection: Binding(
+                get: {
+                    model.conditions.isOffline
+                        ? SimulationChoice.offline : .failure(model.conditions.simulatedFailure)
+                },
+                set: { choice in
+                    Task {
+                        switch choice {
+                        case .offline:
+                            model.setSimulatedFailure(.none)
+                            await model.setOffline(true)
+                        case .failure(let failure):
+                            model.setSimulatedFailure(failure)
+                            await model.setOffline(false)
+                        }
+                    }
+                }
+            )
+        ) {
+            Text(.settingsFailureNone).tag(SimulationChoice.failure(.none))
+            Text(.settingsSimulationOffline).tag(SimulationChoice.offline)
+
+            ForEach(SimulatedFailure.allCases.filter { $0 != .none }, id: \.self) { failure in
+                Text(title(for: failure)).tag(SimulationChoice.failure(failure))
+            }
+        } label: {
+            Label(.settingsSimulationFailure, systemImage: "wifi.exclamationmark")
+        }
+        .accessibilityIdentifier(SettingsAccessibility.simulatedFailurePicker)
+    }
+
+    private var latencyControls: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Label(.settingsSimulationLatency, systemImage: "timer")
+            latencyStepper(
+                title: .settingsSimulationLatencyFrom,
+                value: Binding(
+                    get: { model.conditions.latencyRange.lowerBound },
+                    set: { model.setLatencyLowerBound($0) }
+                )
+            )
+            .padding(.leading, 32)
+            latencyStepper(
+                title: .settingsSimulationLatencyTo,
+                value: Binding(
+                    get: { model.conditions.latencyRange.upperBound },
+                    set: { model.setLatencyUpperBound($0) }
+                )
+            )
+            .padding(.leading, 32)
+        }
+    }
+
+    private var syncNowButton: some View {
+        Button {
+            Task { await model.syncNow() }
+        } label: {
+            Label(.settingsSyncNowButton, systemImage: "arrow.triangle.2.circlepath")
+                .foregroundStyle(model.jobs.isEmpty ? Palette.textSecondary : Palette.accent)
+        }
+        .disabled(model.jobs.isEmpty)
+        .accessibilityIdentifier(SettingsAccessibility.syncNowButton)
     }
 }
 

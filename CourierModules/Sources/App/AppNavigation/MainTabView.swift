@@ -14,53 +14,24 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $router.selectedTab) {
             Tab(.navigationTabDashboard, systemImage: "shippingbox", value: AppTab.dashboard) {
-                NavigationStack {
-                    DashboardView(
-                        taskRepository: environment.store,
-                        shiftRepository: environment.store,
-                        syncController: environment.syncActor,
-                        onSelectTask: { router.showTaskDetails(id: $0) }
-                    )
-                }
+                dashboardView
             }
 
             Tab(.navigationTabHistory, systemImage: "clock", value: AppTab.history) {
-                NavigationStack {
-                    HistoryView(taskRepository: environment.store)
-                }
+                historyView
             }
 
             Tab(.navigationTabSettings, systemImage: "gearshape", value: AppTab.settings) {
-                NavigationStack {
-                    SettingsView(
-                        conditionsStore: environment.networkConditionsStore,
-                        jobRepository: environment.store,
-                        syncController: environment.syncActor
-                    )
-                }
+                settingsView
             }
         }
         .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         .tint(Palette.accent)
         .fullScreenCover(item: $router.presentedTask) { presentation in
-            NavigationStack {
-                TaskDetailsView(
-                    taskID: presentation.id,
-                    taskRepository: environment.store,
-                    onDeliveryMarked: { router.offerUndo(for: $0) },
-                    onFinish: { router.closeTaskDetails() }
-                )
-            }
+            taskDetails(for: presentation)
         }
         .overlay(alignment: .bottom) {
-            if let pendingUndo = router.pendingDeliveryUndo {
-                DeliveryUndoToast(pendingUndo: pendingUndo) {
-                    Task { await undoDelivery(id: pendingUndo.task.id) }
-                }
-                .padding(.bottom, 72)
-                .padding(.horizontal)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            deliveryUndoToast
         }
         .animation(.snappy, value: router.pendingDeliveryUndo?.id)
         .task(id: router.pendingDeliveryUndo?.id) {
@@ -89,6 +60,56 @@ struct MainTabView: View {
             }
 
             Button(String(localized: .navigationDismiss), role: .cancel) { router.dismissUndoFailure() }
+        }
+    }
+
+    private var dashboardView: some View {
+        NavigationStack {
+            DashboardView(
+                taskRepository: environment.store,
+                shiftRepository: environment.store,
+                syncController: environment.syncActor,
+                onSelectTask: { router.showTaskDetails(id: $0) }
+            )
+        }
+    }
+
+    private var historyView: some View {
+        NavigationStack {
+            HistoryView(taskRepository: environment.store)
+        }
+    }
+
+    private var settingsView: some View {
+        NavigationStack {
+            SettingsView(
+                conditionsStore: environment.networkConditionsStore,
+                jobRepository: environment.store,
+                syncController: environment.syncActor
+            )
+        }
+    }
+
+    private func taskDetails(for presentation: TaskPresentation) -> some View {
+        NavigationStack {
+            TaskDetailsView(
+                taskID: presentation.id,
+                taskRepository: environment.store,
+                onDeliveryMarked: { router.offerUndo(for: $0) },
+                onFinish: { router.closeTaskDetails() }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var deliveryUndoToast: some View {
+        if let pendingUndo = router.pendingDeliveryUndo {
+            DeliveryUndoToast(pendingUndo: pendingUndo) {
+                Task { await undoDelivery(id: pendingUndo.task.id) }
+            }
+            .padding(.bottom, 72)
+            .padding(.horizontal)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 

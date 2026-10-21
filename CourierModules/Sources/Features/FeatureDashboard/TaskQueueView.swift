@@ -11,18 +11,7 @@ struct TaskQueueView: View {
 
     var body: some View {
         List {
-            Section {
-                if editMode.isEditing {
-                    Label(.dashboardQueueReorderMessage, systemImage: "line.3.horizontal")
-                        .font(Typography.body)
-                        .foregroundStyle(Palette.textSecondary)
-                        .padding(20)
-                } else {
-                    ShiftCardView(model: shiftCardModel)
-                }
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
+            shiftSection
 
             if let taskInTransit = queueModel.taskInTransit {
                 Section(String(localized: .dashboardQueueInTransitHeader)) {
@@ -30,21 +19,7 @@ struct TaskQueueView: View {
                 }
             }
 
-            Section(String(localized: .dashboardQueueUpcomingHeader)) {
-                ForEach(Array(queueModel.upcomingTasks.enumerated()), id: \.element.id) { index, task in
-                    row(for: task)
-                        .listRowSeparator(.hidden)
-                        .overlay(alignment: .bottom) {
-                            if index < queueModel.upcomingTasks.count - 1 {
-                                Divider().padding(.horizontal, 4)
-                            }
-                        }
-                }
-                .onMove { source, destination in
-                    Task { await queueModel.moveUpcomingTasks(fromOffsets: source, toOffset: destination) }
-                }
-                .moveDisabled(!isInteractive)
-            }
+            upcomingTasksSection
 
             if queueModel.taskInTransit == nil && queueModel.upcomingTasks.isEmpty {
                 EmptyStateView(
@@ -87,6 +62,39 @@ struct TaskQueueView: View {
                 .tint(Palette.accent)
                 .disabled(!isInteractive)
             }
+        }
+    }
+
+    private var shiftSection: some View {
+        Section {
+            if editMode.isEditing {
+                Label(.dashboardQueueReorderMessage, systemImage: "line.3.horizontal")
+                    .font(Typography.body)
+                    .foregroundStyle(Palette.textSecondary)
+                    .padding(20)
+            } else {
+                ShiftCardView(model: shiftCardModel)
+            }
+        }
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets())
+    }
+
+    private var upcomingTasksSection: some View {
+        Section(String(localized: .dashboardQueueUpcomingHeader)) {
+            ForEach(Array(queueModel.upcomingTasks.enumerated()), id: \.element.id) { index, task in
+                row(for: task)
+                    .listRowSeparator(.hidden)
+                    .overlay(alignment: .bottom) {
+                        if index < queueModel.upcomingTasks.count - 1 {
+                            Divider().padding(.horizontal, 4)
+                        }
+                    }
+            }
+            .onMove { source, destination in
+                Task { await queueModel.moveUpcomingTasks(fromOffsets: source, toOffset: destination) }
+            }
+            .moveDisabled(!isInteractive)
         }
     }
 }

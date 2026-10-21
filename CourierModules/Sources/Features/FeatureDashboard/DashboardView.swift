@@ -49,30 +49,44 @@ public struct DashboardView: View {
     private var content: some View {
         switch shiftCardModel.phase {
         case .loading:
-            VStack(spacing: 16) {
-                ProgressView()
-                Text(.dashboardLoadingTitle)
-                    .font(Typography.body)
-                    .foregroundStyle(Palette.textSecondary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            loadingView
+
         case .failed:
-            EmptyStateView(
-                systemImage: "wifi.exclamationmark",
-                title: .dashboardErrorTitle,
-                message: .dashboardErrorMessage,
-                action: EmptyStateView.Action(.dashboardErrorRetryButton) {
-                    Task { await shiftCardModel.retry() }
-                }
-            )
+            emptyStateView
+
         case .ready:
-            TaskQueueView(
-                shiftCardModel: shiftCardModel,
-                queueModel: queueModel,
-                isInteractive: shiftCardModel.isShiftActive,
-                onSelectTask: onSelectTask
-            )
+            taskQueueView
         }
+    }
+
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text(.dashboardLoadingTitle)
+                .font(Typography.body)
+                .foregroundStyle(Palette.textSecondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var emptyStateView: some View {
+        EmptyStateView(
+            systemImage: "wifi.exclamationmark",
+            title: .dashboardErrorTitle,
+            message: .dashboardErrorMessage,
+            action: EmptyStateView.Action(.dashboardErrorRetryButton) {
+                Task { await shiftCardModel.retry() }
+            }
+        )
+    }
+
+    private var taskQueueView: some View {
+        TaskQueueView(
+            shiftCardModel: shiftCardModel,
+            queueModel: queueModel,
+            isInteractive: shiftCardModel.isShiftActive,
+            onSelectTask: onSelectTask
+        )
     }
 }
 

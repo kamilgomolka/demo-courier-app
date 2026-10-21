@@ -42,14 +42,7 @@ public struct TaskDetailsView: View {
                 previous == .inTransit && current == .delivered
             }
             .sheet(isPresented: $isExceptionSheetPresented) {
-                ExceptionReportSheet(
-                    onSave: { reason in
-                        isExceptionSheetPresented = false
-                        Task { await model.reportException(reason) }
-                    },
-                    onCancel: { isExceptionSheetPresented = false }
-                )
-                .presentationDetents([.medium, .large])
+                exceptionReportSheet
             }
             .alert(
                 Text(.deliveryAlertTitle),
@@ -73,18 +66,18 @@ public struct TaskDetailsView: View {
         if let task = model.task {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label(.deliveryDetailsRecipientLabel, systemImage: "person.crop.circle")
-                            .font(.caption.weight(.bold))
-                            .textCase(.uppercase)
-                            .foregroundStyle(Palette.accent)
-                        Text(task.recipientName)
-                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                            .foregroundStyle(Palette.textPrimary)
-                            .minimumScaleFactor(0.75)
-                    }
+                    heroSection(of: task)
 
-                    details(of: task)
+                    VStack(alignment: .leading, spacing: 22) {
+                        addressSection(of: task)
+
+                        Divider()
+
+                        bodySection(of: task)
+                    }
+                    .padding(20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 22))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(24)
@@ -100,101 +93,137 @@ public struct TaskDetailsView: View {
         }
     }
 
-    private func details(of task: DeliveryTask) -> some View {
-        VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(.deliveryDetailsAddressLabel, systemImage: "mappin.circle.fill")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Palette.accent)
-                Text(task.deliveryAddress)
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Palette.textPrimary)
-            }
-
-            Divider()
-
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label(.deliveryDetailsPackageLabel, systemImage: "shippingbox")
-                        .font(Typography.caption)
-                        .foregroundStyle(Palette.textSecondary)
-                    Text(task.packageSummary)
-                        .font(Typography.body)
-                        .foregroundStyle(Palette.textPrimary)
-                }
-
-                Spacer(minLength: 8)
-
-                VStack(alignment: .trailing, spacing: 6) {
-                    Text(.deliveryDetailsPayoutLabel)
-                        .font(Typography.caption)
-                        .foregroundStyle(Palette.textSecondary)
-                    Text(task.payout, format: .currency(code: "GBP"))
-                        .font(Typography.amount.monospacedDigit())
-                        .foregroundStyle(Palette.textPrimary)
-                }
-            }
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Palette.surfaceCard, in: RoundedRectangle(cornerRadius: 22))
-    }
-
-    @ViewBuilder
     private func actions(for task: DeliveryTask) -> some View {
         VStack(spacing: 12) {
             switch task.status {
             case .new:
-                Text(.deliveryDetailsStartPrompt)
-                    .font(Typography.caption)
-                    .foregroundStyle(Palette.textSecondary)
-
-                PrimaryButton(.deliveryDetailsStartButton, systemImage: "bicycle") {
-                    Task { await model.startDelivery() }
-                }
-                .disabled(model.isPerformingAction)
-                .accessibilityIdentifier(DeliveryAccessibility.startButton)
+                newTaskActions
             case .inTransit:
-                Text(.deliveryDetailsCompletionPrompt)
-                    .font(Typography.caption)
-                    .foregroundStyle(Palette.textSecondary)
-
-                PrimaryButton(.deliveryDetailsMarkDeliveredButton, systemImage: "checkmark") {
-                    Task { await model.markDelivered() }
-                }
-                .disabled(model.isPerformingAction)
-                .accessibilityIdentifier(DeliveryAccessibility.markDeliveredButton)
-
-                Button {
-                    isExceptionSheetPresented = true
-                } label: {
-                    Label(.deliveryDetailsReportExceptionButton, systemImage: "exclamationmark.bubble")
-                        .font(Typography.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .foregroundStyle(Palette.danger)
-                        .background(
-                            LinearGradient(
-                                colors: [
-                                    Palette.danger.opacity(0.08),
-                                    Palette.danger.mix(with: .black, by: 0.35).opacity(0.08),
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            ),
-                            in: RoundedRectangle(cornerRadius: 18)
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier(DeliveryAccessibility.reportExceptionButton)
+                inTransitTaskActions
             case .delivered, .exception:
-                PrimaryButton(.deliveryDetailsDoneButton, systemImage: "checkmark") {
-                    Task { await model.completeDelivery() }
-                }
-                .disabled(model.isPerformingAction)
-                .accessibilityIdentifier(DeliveryAccessibility.doneButton)
+                finishedTaskActions
             }
         }
+    }
+
+    private func heroSection(of task: DeliveryTask) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(.deliveryDetailsRecipientLabel, systemImage: "person.crop.circle")
+                .font(.caption.weight(.bold))
+                .textCase(.uppercase)
+                .foregroundStyle(Palette.accent)
+            Text(task.recipientName)
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .foregroundStyle(Palette.textPrimary)
+                .minimumScaleFactor(0.75)
+        }
+    }
+
+    private func addressSection(of task: DeliveryTask) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(.deliveryDetailsAddressLabel, systemImage: "mappin.circle.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Palette.accent)
+            Text(task.deliveryAddress)
+                .font(.system(.title3, design: .rounded, weight: .semibold))
+                .foregroundStyle(Palette.textPrimary)
+        }
+    }
+
+    private func bodySection(of task: DeliveryTask) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label(.deliveryDetailsPackageLabel, systemImage: "shippingbox")
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.textSecondary)
+                Text(task.packageSummary)
+                    .font(Typography.body)
+                    .foregroundStyle(Palette.textPrimary)
+            }
+
+            Spacer(minLength: 8)
+
+            VStack(alignment: .trailing, spacing: 6) {
+                Text(.deliveryDetailsPayoutLabel)
+                    .font(Typography.caption)
+                    .foregroundStyle(Palette.textSecondary)
+                Text(task.payout, format: .currency(code: "GBP"))
+                    .font(Typography.amount.monospacedDigit())
+                    .foregroundStyle(Palette.textPrimary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var newTaskActions: some View {
+        Text(.deliveryDetailsStartPrompt)
+            .font(Typography.caption)
+            .foregroundStyle(Palette.textSecondary)
+
+        PrimaryButton(.deliveryDetailsStartButton, systemImage: "bicycle") {
+            Task { await model.startDelivery() }
+        }
+        .disabled(model.isPerformingAction)
+        .accessibilityIdentifier(DeliveryAccessibility.startButton)
+    }
+
+    @ViewBuilder
+    private var inTransitTaskActions: some View {
+        Text(.deliveryDetailsCompletionPrompt)
+            .font(Typography.caption)
+            .foregroundStyle(Palette.textSecondary)
+
+        PrimaryButton(.deliveryDetailsMarkDeliveredButton, systemImage: "checkmark") {
+            Task { await model.markDelivered() }
+        }
+        .disabled(model.isPerformingAction)
+        .accessibilityIdentifier(DeliveryAccessibility.markDeliveredButton)
+
+        reportExceptionButton
+    }
+
+    private var finishedTaskActions: some View {
+        PrimaryButton(.deliveryDetailsDoneButton, systemImage: "checkmark") {
+            Task { await model.completeDelivery() }
+        }
+        .disabled(model.isPerformingAction)
+        .accessibilityIdentifier(DeliveryAccessibility.doneButton)
+    }
+
+    private var reportExceptionButton: some View {
+        Button {
+            isExceptionSheetPresented = true
+        } label: {
+            Label(.deliveryDetailsReportExceptionButton, systemImage: "exclamationmark.bubble")
+                .font(Typography.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .foregroundStyle(Palette.danger)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Palette.danger.opacity(0.08),
+                            Palette.danger.mix(with: .black, by: 0.35).opacity(0.08),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    in: RoundedRectangle(cornerRadius: 18)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(DeliveryAccessibility.reportExceptionButton)
+    }
+
+    private var exceptionReportSheet: some View {
+        ExceptionReportSheet(
+            onSave: { reason in
+                isExceptionSheetPresented = false
+                Task { await model.reportException(reason) }
+            },
+            onCancel: { isExceptionSheetPresented = false }
+        )
+        .presentationDetents([.medium, .large])
     }
 }
 
