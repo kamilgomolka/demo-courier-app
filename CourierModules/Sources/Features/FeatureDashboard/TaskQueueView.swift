@@ -84,12 +84,6 @@ struct TaskQueueView: View {
         Section(String(localized: .dashboardQueueUpcomingHeader)) {
             ForEach(Array(queueModel.upcomingTasks.enumerated()), id: \.element.id) { index, task in
                 row(for: task)
-                    .listRowSeparator(.hidden)
-                    .overlay(alignment: .bottom) {
-                        if index < queueModel.upcomingTasks.count - 1 {
-                            Divider().padding(.horizontal, 4)
-                        }
-                    }
             }
             .onMove { source, destination in
                 Task { await queueModel.moveUpcomingTasks(fromOffsets: source, toOffset: destination) }
