@@ -58,19 +58,8 @@ private struct MintButtonStyle: ButtonStyle {
             .padding(.vertical, 16)
             .background(
                 LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom),
-                in: RoundedRectangle(cornerRadius: 18)
+                in: .capsule
             )
-            .overlay {
-                RoundedRectangle(cornerRadius: 18)
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [.white.opacity(0.2), .white.opacity(0.04)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 1 / displayScale
-                    )
-            }
             .shadow(color: glow.opacity(isEnabled ? 0.3 : 0), radius: 14, x: 0, y: 7)
             .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
     }

@@ -34,6 +34,8 @@ public struct EmptyStateView: View {
         } description: {
             if let message {
                 Text(message)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
             }
         } actions: {
             if let action {
