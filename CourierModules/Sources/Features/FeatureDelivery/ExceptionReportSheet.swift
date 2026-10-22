@@ -100,7 +100,7 @@ struct ExceptionReportSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text(.deliveryExceptionTitle)
-                    .font(.title2.weight(.bold))
+                    .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal)
@@ -111,7 +111,7 @@ struct ExceptionReportSheet: View {
                     detailsField
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, 4)
         }
     }
 

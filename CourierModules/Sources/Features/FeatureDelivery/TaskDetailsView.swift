@@ -86,23 +86,9 @@ public struct TaskDetailsView: View {
                 actions(for: task)
                     .padding(24)
                     .frame(maxWidth: .infinity)
-                    .background(.regularMaterial)
             }
         } else {
             ProgressView()
-        }
-    }
-
-    private func actions(for task: DeliveryTask) -> some View {
-        VStack(spacing: 12) {
-            switch task.status {
-            case .new:
-                newTaskActions
-            case .inTransit:
-                inTransitTaskActions
-            case .delivered, .exception:
-                finishedTaskActions
-            }
         }
     }
 
@@ -150,6 +136,19 @@ public struct TaskDetailsView: View {
                 Text(task.payout, format: .currency(code: "GBP"))
                     .font(Typography.amount.monospacedDigit())
                     .foregroundStyle(Palette.textPrimary)
+            }
+        }
+    }
+    
+    private func actions(for task: DeliveryTask) -> some View {
+        VStack(spacing: 14) {
+            switch task.status {
+            case .new:
+                newTaskActions
+            case .inTransit:
+                inTransitTaskActions
+            case .delivered, .exception:
+                finishedTaskActions
             }
         }
     }
