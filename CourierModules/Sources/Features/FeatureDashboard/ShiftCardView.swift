@@ -5,6 +5,7 @@ import SwiftUI
 struct ShiftCardView: View {
     let model: ShiftCardViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @ScaledMetric(relativeTo: .title2) private var progressDiameter = 72
     @State private var isEndConfirmationPresented = false
 
     private var isDark: Bool { colorScheme == .dark }
@@ -26,20 +27,18 @@ struct ShiftCardView: View {
 
     var body: some View {
         if let summary = model.summary {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 header(for: summary)
 
-                progressSection(for: summary)
-
-                earningsSection(for: summary)
+                metricsSection(for: summary)
 
                 actions(for: summary)
             }
-            .padding(20)
-            .background(cardBackground, in: RoundedRectangle(cornerRadius: 24))
+            .padding(24)
+            .background(cardBackground, in: RoundedRectangle(cornerRadius: 28))
             .overlay {
-                RoundedRectangle(cornerRadius: 24)
-                    .strokeBorder(Palette.mint.opacity(0.12), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 28)
+                    .strokeBorder(Palette.mint.opacity(0.15), lineWidth: 1)
             }
             .padding(1)
             .animation(.snappy, value: summary.earnings)
@@ -82,7 +81,7 @@ struct ShiftCardView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
                 Label(.dashboardShiftCardLabel, systemImage: "bicycle")
-                    .font(.caption.weight(.bold))
+                    .font(.system(.caption, design: .rounded, weight: .bold))
                     .textCase(.uppercase)
                     .foregroundStyle(cardSecondary)
                 Text(statusTitle(for: summary.status))
@@ -92,49 +91,92 @@ struct ShiftCardView: View {
 
             Spacer()
             Image(systemName: "location.north.line.fill")
-                .font(.title2)
+                .font(.title3.weight(.bold))
                 .foregroundStyle(cardAccent)
-                .frame(width: 48, height: 48)
-                .background(Palette.mint.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
+                .frame(width: 44, height: 44)
+                .background(Palette.mint.opacity(0.15), in: Circle())
         }
     }
+    
+    private func progressView(for summary: ShiftSummary) -> some View {
+        VStack(spacing: 12) {
+            Text(.dashboardShiftCardStopsDone)
+                .font(.system(.caption2, design: .rounded, weight: .bold))
+                .textCase(.uppercase)
+                .foregroundStyle(cardSecondary)
+                .kerning(0.5)
+            
+            ZStack {
+                Circle()
+                    .stroke(Palette.mint.opacity(0.15), lineWidth: 8)
 
-    private func progressSection(for summary: ShiftSummary) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Palette.mint.opacity(0.12))
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [Palette.mint, Palette.mintHighlight],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .shadow(color: Palette.mintHighlight.opacity(0.35), radius: 3)
-                        .frame(width: geometry.size.width * min(max(summary.progress, 0), 1))
+                Circle()
+                    .trim(from: 0, to: min(max(summary.progress, 0), 1))
+                    .stroke(
+                        LinearGradient(
+                            colors: [Palette.mint, Palette.mintHighlight],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .shadow(color: Palette.mintHighlight.opacity(0.4), radius: 4, x: 0, y: 2)
+
+                HStack(spacing: 2) {
+                    Text(summary.completedCount, format: .number)
+                        .font(.system(.title3, design: .rounded, weight: .bold))
+                        .foregroundStyle(cardPrimary)
+                        .contentTransition(.numericText())
+
+                    Text(verbatim: "/\(summary.totalCount.formatted())")
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
+                        .foregroundStyle(cardSecondary)
+                        .kerning(2)
                 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
             }
-            .frame(height: 8)
-
-            Text(.dashboardShiftCardProgress(summary.completedCount, summary.totalCount))
-                .font(Typography.caption)
-                .foregroundStyle(cardSecondary)
+            .frame(width: progressDiameter, height: progressDiameter)
+            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: summary.progress)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(.dashboardShiftCardProgress(summary.completedCount, summary.totalCount)))
         }
     }
-
-    private func earningsSection(for summary: ShiftSummary) -> some View {
-        HStack(alignment: .firstTextBaseline) {
+    
+    private func earningsView(for summary: ShiftSummary) -> some View {
+        VStack(spacing: 18) {
             Text(.dashboardShiftCardEarnings)
-                .font(Typography.caption)
+                .font(.system(.caption2, design: .rounded, weight: .bold))
+                .textCase(.uppercase)
                 .foregroundStyle(cardSecondary)
-            Spacer()
+                .kerning(0.5)
+            
             Text(summary.earnings, format: .currency(code: "GBP"))
-                .font(.system(.title, design: .rounded, weight: .bold).monospacedDigit())
+                .font(.system(.largeTitle, design: .rounded, weight: .heavy).monospacedDigit())
                 .foregroundStyle(cardPrimary)
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
                 .contentTransition(.numericText(value: NSDecimalNumber(decimal: summary.earnings).doubleValue))
         }
+    }
+
+    private func metricsSection(for summary: ShiftSummary) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            progressView(for: summary)
+            
+            Spacer()
+            
+            Divider()
+                .padding(.vertical, 12)
+            
+            Spacer()
+            
+            earningsView(for: summary)
+        }
+        .padding(.horizontal, 12)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(DashboardAccessibility.shiftMetrics)
     }
 
     private var startShiftButton: some View {
@@ -184,6 +226,8 @@ struct ShiftCardView: View {
         var body: some View {
             ShiftCardView(model: model)
                 .padding()
+            
+            Spacer().layoutPriority(1)
         }
     }
 

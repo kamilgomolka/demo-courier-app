@@ -1,4 +1,5 @@
 enum DashboardAccessibility {
+    static let shiftMetrics = "dashboard.shiftMetrics"
     static let startShiftButton = "dashboard.startShiftButton"
     static let endShiftButton = "dashboard.endShiftButton"
     static let endShiftConfirmButton = "dashboard.endShiftConfirmButton"

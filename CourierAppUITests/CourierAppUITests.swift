@@ -15,6 +15,24 @@ final class CourierAppUITests: XCTestCase {
         XCTAssertEqual(app.tabBars.buttons.count, 3)
     }
 
+    func testShiftMetricsCombineProgressAndEarningsAndUpdateAfterDelivery() throws {
+        let metrics = app.descendants(matching: .any)["dashboard.shiftMetrics"]
+        XCTAssertTrue(metrics.waitForExistence(timeout: 10.0))
+        XCTAssertTrue(metrics.label.lowercased().hasPrefix("stops completed"), metrics.label)
+        XCTAssertTrue(metrics.label.contains("0 of 12 stops done"), metrics.label)
+        XCTAssertTrue(metrics.label.contains("£0.00"), metrics.label)
+
+        app.buttons["dashboard.startShiftButton"].tap()
+        app.buttons["dashboard.taskRow.task-01"].tap()
+        app.buttons["delivery.startButton"].tap()
+        app.buttons["delivery.markDeliveredButton"].tap()
+
+        let updatedMetrics = app.descendants(matching: .any).matching(
+            identifier: "dashboard.shiftMetrics"
+        ).matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "1 of 12 stops done", "£14.50"))
+        XCTAssertTrue(updatedMetrics.firstMatch.waitForExistence(timeout: 5.0))
+    }
+
     func testDeliveryFlowStartsDeliversAndUndoes() throws {
         app.buttons["dashboard.startShiftButton"].tap()
 
