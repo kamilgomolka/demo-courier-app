@@ -30,7 +30,7 @@ No third-party dependencies are used.
 
 **Recording: Happy path**
 
-https://github.com/user-attachments/assets/b0fcba36-2fab-4de5-bb6b-458479b7d533
+https://github.com/user-attachments/assets/667d0437-e814-4c72-9d0d-4159c2d7254e
 
 (See more recordings in [./Docs/Recordings/](./Docs/Recordings/))
 
