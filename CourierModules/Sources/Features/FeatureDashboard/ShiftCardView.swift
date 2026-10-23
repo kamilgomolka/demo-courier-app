@@ -84,6 +84,9 @@ struct ShiftCardView: View {
                     .font(.system(.caption, design: .rounded, weight: .bold))
                     .textCase(.uppercase)
                     .foregroundStyle(cardSecondary)
+                    .kerning(0.5)
+                    .labelIconToTitleSpacing(4)
+                
                 Text(statusTitle(for: summary.status))
                     .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(cardPrimary)

@@ -93,11 +93,13 @@ public struct TaskDetailsView: View {
     }
 
     private func heroSection(of task: DeliveryTask) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 6) {
             Label(.deliveryDetailsRecipientLabel, systemImage: "person.crop.circle")
-                .font(.caption.weight(.bold))
+                .font(.subheadline.weight(.semibold))
                 .textCase(.uppercase)
                 .foregroundStyle(Palette.accent)
+                .labelIconToTitleSpacing(4)
+            
             Text(task.recipientName)
                 .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 .foregroundStyle(Palette.textPrimary)
@@ -110,6 +112,8 @@ public struct TaskDetailsView: View {
             Label(.deliveryDetailsAddressLabel, systemImage: "mappin.circle.fill")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Palette.accent)
+                .labelIconToTitleSpacing(4)
+            
             Text(task.deliveryAddress)
                 .font(.system(.title3, design: .rounded, weight: .semibold))
                 .foregroundStyle(Palette.textPrimary)
@@ -118,10 +122,12 @@ public struct TaskDetailsView: View {
 
     private func bodySection(of task: DeliveryTask) -> some View {
         HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 Label(.deliveryDetailsPackageLabel, systemImage: "shippingbox")
                     .font(Typography.caption)
                     .foregroundStyle(Palette.textSecondary)
+                    .labelIconToTitleSpacing(4)
+                
                 Text(task.packageSummary)
                     .font(Typography.body)
                     .foregroundStyle(Palette.textPrimary)
@@ -129,7 +135,7 @@ public struct TaskDetailsView: View {
 
             Spacer(minLength: 8)
 
-            VStack(alignment: .trailing, spacing: 6) {
+            VStack(alignment: .trailing, spacing: 8) {
                 Text(.deliveryDetailsPayoutLabel)
                     .font(Typography.caption)
                     .foregroundStyle(Palette.textSecondary)
@@ -141,7 +147,7 @@ public struct TaskDetailsView: View {
     }
     
     private func actions(for task: DeliveryTask) -> some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 18) {
             switch task.status {
             case .new:
                 newTaskActions
@@ -202,12 +208,12 @@ public struct TaskDetailsView: View {
                     LinearGradient(
                         colors: [
                             Palette.danger.opacity(0.08),
-                            Palette.danger.mix(with: .black, by: 0.35).opacity(0.08),
+                            Palette.danger.opacity(0.16),
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     ),
-                    in: RoundedRectangle(cornerRadius: 18)
+                    in: .capsule
                 )
         }
         .buttonStyle(.plain)
