@@ -1,5 +1,9 @@
 # CourierApp
 
+<p align="left">
+    <img src="./CourierApp/SupportingFiles/Assets.xcassets/AppIcon.appiconset/AppIcon.png" width="64" height="64" alt="App Icon" />
+</p>
+
 [![Swift](https://img.shields.io/badge/Swift-6.3-F05138.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/iOS-26.0%2B-000000.svg)](https://developer.apple.com/ios/)
 [![Xcode](https://img.shields.io/badge/Xcode-26.6-1575F9.svg)](https://developer.apple.com/xcode/)
@@ -9,15 +13,26 @@
 
 The CourierApp project demonstrates a modern architectural approach to building iOS apps. It utilizes independent Swift Package Manager (SPM) micro-modules, a strict domain-driven design, and an atomic outbox-based synchronization engine. 
 
-Couriers can complete deliveries seamlessly while completely offline. Each task mutation and its corresponding remote sync job are persisted in a single local transaction, surviving app termination and syncing gracefully when connectivity returns. No third-party dependencies are used.
+Couriers can complete deliveries seamlessly while completely offline. Each task mutation and its corresponding remote sync job are persisted in a single local transaction, surviving app termination and syncing gracefully when connectivity returns. 
 
-## Screenshots & Demo
+No third-party dependencies are used.
 
-| Dashboard & Queue | Delivery Details | Exception Reporting | Activity History |
-| :---: | :---: | :---: | :---: |
-| <img src="./Docs/Screenshots/1-Dashboard.png" width="200" alt="Dashboard"> | <img src="./Docs/Screenshots/2-Details.png" width="200" alt="Delivery Details"> | <img src="./Docs/Screenshots/3-Exception.png" width="200" alt="Exception Sheet"> | <img src="./Docs/Screenshots/4-Activity.png" width="200" alt="Activity History"> |
+## Screenshots & Recordings
 
-> *Video placeholder: Completing a delivery offline → inspecting the pending outbox → force quitting the app → relaunching → restoring connection to watch the outbox drain.*
+| Dashboard & Queue | Delivery Details |
+| :---: | :---: |
+| <img src="./Docs/Screenshots/1-Dashboard.png" width="320" alt="Dashboard"> | <img src="./Docs/Screenshots/2-Details.png" width="320" alt="Delivery Details"> |
+
+| Exception Reporting | Activity History |
+| :---: | :---: |
+| <img src="./Docs/Screenshots/3-Exception.png" width="320" alt="Exception Sheet"> | <img src="./Docs/Screenshots/4-Activity.png" width="320" alt="Activity History"> |
+
+
+**Recording: Happy path**
+
+https://github.com/user-attachments/assets/b0fcba36-2fab-4de5-bb6b-458479b7d533
+
+(See more recordings in [./Docs/Recordings/](./Docs/Recordings/))
 
 ## Key Capabilities
 
